@@ -26,3 +26,6 @@ app:
   booking:
     hold-minutes: 10
     expire-delay-ms: 60000
+  mail:
+    enabled: false
+    from: noreply@rex.local

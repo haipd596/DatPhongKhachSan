@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import client from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import SupportChatbot from "../components/SupportChatbot";
 
 function HomePage() {
   const { user, logout } = useAuth();
@@ -13,6 +14,8 @@ function HomePage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingId, setLoadingId] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
 
   useEffect(() => {
     loadDefaultData();
@@ -27,6 +30,8 @@ function HomePage() {
     setRooms(roomsRes.data);
     setBookings(bookingsRes.data);
     setVipInfo(vipRes.data);
+    const reviewRes = await client.get("/reviews/hotel");
+    setReviews(reviewRes.data);
   };
 
   const searchAvailable = async (e) => {
@@ -101,6 +106,38 @@ function HomePage() {
     }
   };
 
+  const downloadPdf = async (bookingId) => {
+    setError("");
+    try {
+      const res = await client.get(`/bookings/${bookingId}/pdf?purpose=Giay+xac+nhan`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `booking-${bookingId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.response?.data?.message || "Khong tai duoc PDF");
+    }
+  };
+
+  const submitReview = async (e) => {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    try {
+      await client.post("/reviews", { rating: Number(reviewForm.rating), comment: reviewForm.comment });
+      setReviewForm({ rating: 5, comment: "" });
+      const reviewRes = await client.get("/reviews/hotel");
+      setReviews(reviewRes.data);
+      setMessage("Da gui danh gia dich vu");
+    } catch (err) {
+      setError(err.response?.data?.message || "Khong gui duoc danh gia");
+    }
+  };
+
   return (
     <main className="panel">
       <h1>Rex Sai Gon Booking - Customer Portal</h1>
@@ -158,6 +195,7 @@ function HomePage() {
               Thanh toan mo phong
             </button>
           )}
+          <button onClick={() => downloadPdf(booking.id)}>Tai PDF</button>
           {(booking.status === "HOLD" || booking.status === "CONFIRMED") && (
             <button onClick={() => cancelBooking(booking.id)} disabled={loadingId === booking.id}>
               Huy
@@ -165,6 +203,44 @@ function HomePage() {
           )}
         </div>
       ))}
+
+      <h3>Danh gia chat luong phuc vu</h3>
+      <form className="auth-form" onSubmit={submitReview}>
+        <select
+          value={reviewForm.rating}
+          onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}
+        >
+          <option value={5}>5 sao</option>
+          <option value={4}>4 sao</option>
+          <option value={3}>3 sao</option>
+          <option value={2}>2 sao</option>
+          <option value={1}>1 sao</option>
+        </select>
+        <input
+          value={reviewForm.comment}
+          onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+          placeholder="Nhan xet cua ban"
+          required
+        />
+        <button type="submit">Gui danh gia</button>
+      </form>
+      {reviews.map((review) => (
+        <p key={review.id}>
+          {review.fullName}: {review.rating} sao - {review.comment}
+        </p>
+      ))}
+
+      <h3>Ban do khach san</h3>
+      <iframe
+        title="Rex map"
+        width="100%"
+        height="240"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed"
+      />
+
+      <SupportChatbot />
 
       <button onClick={logout}>Dang xuat</button>
     </main>

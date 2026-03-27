@@ -10,6 +10,7 @@ function ManagerPage() {
   const [typeForm, setTypeForm] = useState({ name: "", basePrice: "", maxGuests: "", description: "" });
   const [roomForm, setRoomForm] = useState({ code: "", floorNumber: "", roomTypeId: "", status: "AVAILABLE" });
   const [error, setError] = useState("");
+  const [dashboard, setDashboard] = useState(null);
 
   useEffect(() => {
     loadManagerData();
@@ -22,9 +23,11 @@ function ManagerPage() {
         client.get("/manager/room-types"),
         client.get("/manager/rooms")
       ]);
+      const dashboardRes = await client.get("/manager/dashboard");
       setHealth(healthRes.data.message);
       setRoomTypes(typesRes.data);
       setRooms(roomsRes.data);
+      setDashboard(dashboardRes.data);
     } catch {
       setHealth("Khong truy cap duoc API manager");
     }
@@ -64,10 +67,19 @@ function ManagerPage() {
 
   return (
     <main className="panel">
-      <h1>Manager Dashboard (Milestone 2)</h1>
+      <h1>Manager Dashboard (Milestone 5)</h1>
       <p>Xin chao {user.fullName}</p>
       <p>API status: {health}</p>
       {error && <p className="error">{error}</p>}
+      {dashboard && (
+        <div>
+          <p>Tong phong: {dashboard.totalRooms}</p>
+          <p>Phong san sang: {dashboard.availableRooms}</p>
+          <p>Booking thanh cong: {dashboard.confirmedBookings}</p>
+          <p>Doanh thu: {Number(dashboard.revenue).toLocaleString("vi-VN")} VND</p>
+          <p>Diem danh gia TB: {Number(dashboard.avgRating).toFixed(2)}</p>
+        </div>
+      )}
 
       <h3>Tao loai phong</h3>
       <form className="auth-form" onSubmit={createRoomType}>

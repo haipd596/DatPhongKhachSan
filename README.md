@@ -35,6 +35,14 @@ Monorepo:
 - Discount is applied when creating hold booking
 - API to read current customer VIP status and discount rate
 
+## Milestone 5 (done)
+
+- Email notifications (mock logger by default, SMTP optional)
+- PDF export for booking confirmation/cancellation
+- Review APIs: submit + read latest reviews
+- Manager dashboard API: rooms, bookings, revenue, avg rating
+- Frontend additions: review UI, map embed, FAQ chatbot, PDF download
+
 ## Quick start
 
 ### Backend

@@ -16,6 +16,7 @@ import com.rexhotel.booking.auth.dto.RegisterRequest;
 import com.rexhotel.booking.auth.dto.ResetPasswordRequest;
 import com.rexhotel.booking.common.ApiException;
 import com.rexhotel.booking.config.JwtService;
+import com.rexhotel.booking.notification.BookingNotificationService;
 import com.rexhotel.booking.user.User;
 import com.rexhotel.booking.user.UserRepository;
 import com.rexhotel.booking.user.UserRole;
@@ -28,18 +29,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final BookingNotificationService bookingNotificationService;
     private final Random random = new Random();
 
     public AuthService(UserRepository userRepository,
                        PasswordResetTokenRepository tokenRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       BookingNotificationService bookingNotificationService) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.bookingNotificationService = bookingNotificationService;
     }
 
     @Transactional
@@ -73,6 +77,7 @@ public class AuthService {
         String code = String.valueOf(100000 + random.nextInt(900000));
         PasswordResetToken token = new PasswordResetToken(code, user, LocalDateTime.now().plusMinutes(15));
         tokenRepository.save(token);
+        bookingNotificationService.sendPasswordResetCode(user.getEmail(), code);
         return code;
     }
 

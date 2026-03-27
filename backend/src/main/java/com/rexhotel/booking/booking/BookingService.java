@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.rexhotel.booking.booking.dto.BookingResponse;
 import com.rexhotel.booking.booking.dto.HoldBookingRequest;
 import com.rexhotel.booking.common.ApiException;
+import com.rexhotel.booking.notification.BookingNotificationService;
 import com.rexhotel.booking.room.Room;
 import com.rexhotel.booking.room.RoomRepository;
 import com.rexhotel.booking.room.RoomStatus;
@@ -30,17 +31,20 @@ public class BookingService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final VipPolicyService vipPolicyService;
+    private final BookingNotificationService bookingNotificationService;
     private final long holdMinutes;
 
     public BookingService(BookingRepository bookingRepository,
                           UserRepository userRepository,
                           RoomRepository roomRepository,
                           VipPolicyService vipPolicyService,
+                          BookingNotificationService bookingNotificationService,
                           @Value("${app.booking.hold-minutes:10}") long holdMinutes) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.roomRepository = roomRepository;
         this.vipPolicyService = vipPolicyService;
+        this.bookingNotificationService = bookingNotificationService;
         this.holdMinutes = holdMinutes;
     }
 
@@ -73,11 +77,17 @@ public class BookingService {
         Booking booking = new Booking(user, room, checkIn, checkOut, BookingStatus.HOLD, total);
         booking.setHoldExpiresAt(LocalDateTime.now().plusMinutes(holdMinutes));
         bookingRepository.save(booking);
+        bookingNotificationService.sendHoldConfirmation(booking);
         return toResponse(booking);
     }
 
     public List<BookingResponse> myBookings(String email) {
         return bookingRepository.findByUserEmailOrderByCreatedAtDesc(email).stream().map(this::toResponse).toList();
+    }
+
+    public Booking getOwnedBooking(Long bookingId, String email) {
+        return bookingRepository.findByIdAndUserEmail(bookingId, email)
+            .orElseThrow(() -> new ApiException("Khong tim thay booking"));
     }
 
     @Transactional
@@ -90,6 +100,7 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setHoldExpiresAt(null);
         bookingRepository.save(booking);
+        bookingNotificationService.sendBookingCancelled(booking);
         return toResponse(booking);
     }
 
@@ -114,6 +125,7 @@ public class BookingService {
         user.setVipLevel(vipPolicyService.calculateLevel(newCount));
         userRepository.save(user);
         bookingRepository.save(booking);
+        bookingNotificationService.sendBookingConfirmed(booking);
         return booking;
     }
 

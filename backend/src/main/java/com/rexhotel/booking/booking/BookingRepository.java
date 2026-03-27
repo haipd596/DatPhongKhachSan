@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -45,4 +46,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdAndUserEmail(Long id, String email);
 
     List<Booking> findByStatusAndHoldExpiresAtBefore(BookingStatus status, LocalDateTime now);
+
+    long countByStatus(BookingStatus status);
+
+    @Query("select coalesce(sum(b.totalAmount),0) from Booking b where b.status = :status")
+    BigDecimal sumTotalByStatus(@Param("status") BookingStatus status);
 }
