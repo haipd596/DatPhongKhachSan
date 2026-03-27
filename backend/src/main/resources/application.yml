@@ -23,3 +23,6 @@ app:
   jwt:
     secret: REPLACE_WITH_AT_LEAST_32_CHARACTERS_SECRET_KEY_REX_2026
     expiration-seconds: 86400
+  booking:
+    hold-minutes: 10
+    expire-delay-ms: 60000

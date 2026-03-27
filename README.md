@@ -20,6 +20,14 @@ Monorepo:
 - Seed demo room data
 - Frontend customer search screen + manager room management screen
 
+## Milestone 3 (done)
+
+- Booking hold API with configurable hold minutes
+- Auto-expire hold bookings by scheduler
+- Customer booking history + cancel booking API
+- Mock payment success API and payment transaction table
+- Frontend flow: hold room -> pay mock -> cancel -> history
+
 ## Quick start
 
 ### Backend
