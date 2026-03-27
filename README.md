@@ -12,6 +12,14 @@ Monorepo:
 - JWT security + protected manager route
 - React auth flow + role-based UI routing
 
+## Milestone 2 (done)
+
+- RoomType + Room entities and manager CRUD APIs
+- Availability search by date range (`checkIn`, `checkOut`)
+- Availability summary by room type
+- Seed demo room data
+- Frontend customer search screen + manager room management screen
+
 ## Quick start
 
 ### Backend

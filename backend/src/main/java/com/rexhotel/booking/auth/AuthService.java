@@ -44,11 +44,12 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent()) {
+        String email = request.email().toLowerCase().trim();
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new ApiException("Email da ton tai");
         }
         User user = new User(
-            request.email().toLowerCase().trim(),
+            email,
             passwordEncoder.encode(request.password()),
             request.fullName().trim(),
             UserRole.CUSTOMER
@@ -58,15 +59,16 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
-        User user = userRepository.findByEmail(request.email())
+        String email = request.email().toLowerCase().trim();
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
+        User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new ApiException("Sai thong tin dang nhap"));
         return toAuthResponse(user);
     }
 
     @Transactional
     public String forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmail(request.email().toLowerCase().trim())
             .orElseThrow(() -> new ApiException("Email khong ton tai"));
         String code = String.valueOf(100000 + random.nextInt(900000));
         PasswordResetToken token = new PasswordResetToken(code, user, LocalDateTime.now().plusMinutes(15));
