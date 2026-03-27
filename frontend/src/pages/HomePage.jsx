@@ -9,6 +9,7 @@ function HomePage() {
   const [rooms, setRooms] = useState([]);
   const [summary, setSummary] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [vipInfo, setVipInfo] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingId, setLoadingId] = useState(null);
@@ -18,9 +19,14 @@ function HomePage() {
   }, []);
 
   const loadDefaultData = async () => {
-    const [roomsRes, bookingsRes] = await Promise.all([client.get("/rooms"), client.get("/bookings/my")]);
+    const [roomsRes, bookingsRes, vipRes] = await Promise.all([
+      client.get("/rooms"),
+      client.get("/bookings/my"),
+      client.get("/customers/me/vip")
+    ]);
     setRooms(roomsRes.data);
     setBookings(bookingsRes.data);
+    setVipInfo(vipRes.data);
   };
 
   const searchAvailable = async (e) => {
@@ -52,6 +58,8 @@ function HomePage() {
       setMessage(`Da giu phong #${res.data.id} den ${new Date(res.data.holdExpiresAt).toLocaleString("vi-VN")}`);
       const bookingsRes = await client.get("/bookings/my");
       setBookings(bookingsRes.data);
+      const vipRes = await client.get("/customers/me/vip");
+      setVipInfo(vipRes.data);
     } catch (err) {
       setError(err.response?.data?.message || "Giu phong that bai");
     } finally {
@@ -68,6 +76,8 @@ function HomePage() {
       setMessage(`Thanh toan mo phong thanh cong cho booking #${bookingId}`);
       const bookingsRes = await client.get("/bookings/my");
       setBookings(bookingsRes.data);
+      const vipRes = await client.get("/customers/me/vip");
+      setVipInfo(vipRes.data);
     } catch (err) {
       setError(err.response?.data?.message || "Thanh toan that bai");
     } finally {
@@ -98,6 +108,11 @@ function HomePage() {
       <p>Email: {user.email}</p>
       <p>Vai tro: {user.role}</p>
       <p>Hang VIP: {user.vipLevel}</p>
+      {vipInfo && (
+        <p>
+          So lan dat thanh cong: {vipInfo.bookingCount} - Uu dai hien tai: {Number(vipInfo.discountRate) * 100}%
+        </p>
+      )}
 
       <h3>Tim phong theo thoi diem</h3>
       <form className="auth-form" onSubmit={searchAvailable}>

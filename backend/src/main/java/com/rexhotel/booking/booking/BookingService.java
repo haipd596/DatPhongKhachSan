@@ -19,6 +19,7 @@ import com.rexhotel.booking.room.RoomRepository;
 import com.rexhotel.booking.room.RoomStatus;
 import com.rexhotel.booking.user.User;
 import com.rexhotel.booking.user.UserRepository;
+import com.rexhotel.booking.user.VipPolicyService;
 
 @Service
 public class BookingService {
@@ -28,15 +29,18 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final VipPolicyService vipPolicyService;
     private final long holdMinutes;
 
     public BookingService(BookingRepository bookingRepository,
                           UserRepository userRepository,
                           RoomRepository roomRepository,
+                          VipPolicyService vipPolicyService,
                           @Value("${app.booking.hold-minutes:10}") long holdMinutes) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.roomRepository = roomRepository;
+        this.vipPolicyService = vipPolicyService;
         this.holdMinutes = holdMinutes;
     }
 
@@ -63,7 +67,8 @@ public class BookingService {
         }
 
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-        BigDecimal total = room.getRoomType().getBasePrice().multiply(BigDecimal.valueOf(nights));
+        BigDecimal rawTotal = room.getRoomType().getBasePrice().multiply(BigDecimal.valueOf(nights));
+        BigDecimal total = vipPolicyService.applyDiscount(rawTotal, user.getVipLevel());
 
         Booking booking = new Booking(user, room, checkIn, checkOut, BookingStatus.HOLD, total);
         booking.setHoldExpiresAt(LocalDateTime.now().plusMinutes(holdMinutes));
@@ -103,6 +108,11 @@ public class BookingService {
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setHoldExpiresAt(null);
+        User user = booking.getUser();
+        int newCount = user.getBookingCount() + 1;
+        user.setBookingCount(newCount);
+        user.setVipLevel(vipPolicyService.calculateLevel(newCount));
+        userRepository.save(user);
         bookingRepository.save(booking);
         return booking;
     }

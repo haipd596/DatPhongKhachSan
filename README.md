@@ -28,6 +28,13 @@ Monorepo:
 - Mock payment success API and payment transaction table
 - Frontend flow: hold room -> pay mock -> cancel -> history
 
+## Milestone 4 (done)
+
+- VIP policy auto-level: `NORMAL`, `SILVER`, `GOLD`
+- Auto increase booking count and update VIP after payment success
+- Discount is applied when creating hold booking
+- API to read current customer VIP status and discount rate
+
 ## Quick start
 
 ### Backend
