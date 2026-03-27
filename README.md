@@ -5,6 +5,19 @@ Monorepo:
 - `backend`: Spring Boot API
 - `frontend`: React (Vite)
 
+## One-command run
+
+```bash
+npm install
+powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
+```
+
+Hoac chay truc tiep:
+
+```bash
+npm run dev
+```
+
 ## Milestone 1 (done)
 
 - Auth APIs: register, login, forgot password, reset password, me
@@ -74,3 +87,23 @@ npm run dev
 
 Frontend URL: `http://localhost:5173`
 Backend URL: `http://localhost:8080`
+
+## Demo accounts (seed san)
+
+- Manager: `manager@rex.local` / `Manager@123`
+- Customer A: `customer1@rex.local` / `Customer@123`
+- Customer B: `customer2@rex.local` / `Customer@123`
+- Customer C: `customer3@rex.local` / `Customer@123`
+
+## Script demo 10 phut
+
+1. Dang nhap `manager@rex.local`, mo dashboard xem tong phong, booking, doanh thu, diem danh gia.
+2. Vao danh sach loai phong/phong, tao them 1 phong de demo CRUD.
+3. Dang xuat, dang nhap `customer2@rex.local` (VIP SILVER).
+4. Tim phong theo ngay, xem so phong trong theo loai.
+5. Giu phong 1 phong, quan sat booking o trang thai `HOLD`.
+6. Thanh toan mo phong -> booking sang `CONFIRMED`.
+7. Tai PDF xac nhan booking.
+8. Gui 1 danh gia dich vu moi.
+9. Mo chatbot FAQ va hoi "gio check-in" de demo ho tro khach.
+10. Quay lai manager dashboard, refresh va trinh bay chi so da cap nhat.
