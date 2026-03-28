@@ -18,6 +18,27 @@ Hoac chay truc tiep:
 npm run dev
 ```
 
+## Database setup (MySQL)
+
+```bash
+npm run db:up
+```
+
+Thong so mac dinh:
+
+- Host: `localhost`
+- Port: `3306`
+- Database: `rex_booking`
+- User: `rex`
+- Password: `rex123`
+- Root password: `root123`
+
+Dung profile H2 neu can:
+
+```bash
+mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=h2
+```
+
 ## Milestone 1 (done)
 
 - Auth APIs: register, login, forgot password, reset password, me
@@ -94,6 +115,20 @@ Backend URL: `http://localhost:8080`
 - Customer A: `customer1@rex.local` / `Customer@123`
 - Customer B: `customer2@rex.local` / `Customer@123`
 - Customer C: `customer3@rex.local` / `Customer@123`
+
+## Seeding
+
+Seed duoc thuc hien tu dong khi backend start qua:
+
+- [DataInitializer.java](D:/project/DatPhongKhachSan/backend/src/main/java/com/rexhotel/booking/config/DataInitializer.java)
+
+Du lieu seed gom:
+
+- manager + 3 customer demo
+- room types + rooms
+- bookings da xac nhan / dang hold / da huy / het han
+- payment transactions
+- reviews
 
 ## Script demo 10 phut
 

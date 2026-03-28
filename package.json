@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "concurrently -k -n BE,FE -c yellow,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "mvn -f backend/pom.xml spring-boot:run",
-    "dev:frontend": "npm --prefix frontend run dev"
+    "dev:frontend": "npm --prefix frontend run dev",
+    "db:up": "docker compose up -d mysql",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mysql"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
