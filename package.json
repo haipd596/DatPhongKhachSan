@@ -8,7 +8,10 @@
     "dev:frontend": "npm --prefix frontend run dev",
     "db:up": "docker compose up -d mysql",
     "db:down": "docker compose down",
-    "db:logs": "docker compose logs -f mysql"
+    "db:logs": "docker compose logs -f mysql",
+    "deploy:up": "docker compose -f docker-compose.prod.yml up -d --build",
+    "deploy:down": "docker compose -f docker-compose.prod.yml down",
+    "deploy:logs": "docker compose -f docker-compose.prod.yml logs -f"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

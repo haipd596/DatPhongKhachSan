@@ -39,6 +39,34 @@ Dung profile H2 neu can:
 mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=h2
 ```
 
+## Docker deployment (production-ready)
+
+1. Tao file env:
+
+```bash
+copy .env.prod.example .env.prod
+```
+
+2. Chinh gia tri trong `.env.prod` (dac biet `APP_JWT_SECRET`, `APP_CORS_ALLOWED_ORIGINS`).
+
+3. Deploy:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+4. Kiem tra logs:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f
+```
+
+5. Dung deploy:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml down
+```
+
 ## Milestone 1 (done)
 
 - Auth APIs: register, login, forgot password, reset password, me

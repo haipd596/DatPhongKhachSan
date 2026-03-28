@@ -17,7 +17,7 @@ spring:
 
 app:
   jwt:
-    secret: REPLACE_WITH_AT_LEAST_32_CHARACTERS_SECRET_KEY_REX_2026
+    secret: ${APP_JWT_SECRET:REPLACE_WITH_AT_LEAST_32_CHARACTERS_SECRET_KEY_REX_2026}
     expiration-seconds: 86400
   booking:
     hold-minutes: 10
@@ -25,3 +25,5 @@ app:
   mail:
     enabled: false
     from: noreply@rex.local
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
