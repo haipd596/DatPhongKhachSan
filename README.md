@@ -67,6 +67,14 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f
 docker compose --env-file .env.prod -f docker-compose.prod.yml down
 ```
 
+## Railway deploy notes
+
+- Deploy 2 service rieng:
+- Service backend: root directory `backend`, su dung [backend/railway.toml](D:/project/DatPhongKhachSan/backend/railway.toml)
+- Service frontend: root directory `frontend`, su dung [frontend/railway.toml](D:/project/DatPhongKhachSan/frontend/railway.toml)
+
+Luu y frontend da ho tro `PORT` dong qua [nginx.conf.template](D:/project/DatPhongKhachSan/frontend/nginx.conf.template).
+
 ## Milestone 1 (done)
 
 - Auth APIs: register, login, forgot password, reset password, me
