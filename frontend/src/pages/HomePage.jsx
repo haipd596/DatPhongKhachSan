@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import client from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import SupportChatbot from "../components/SupportChatbot";
 
 const BOOKING_STATUS_TEXT = {
-  HOLD: "�ang gi?",
-  CONFIRMED: "�� x�c nh?n",
-  CANCELLED: "�� h?y",
-  EXPIRED: "H?t h?n"
+  HOLD: "Đang giữ",
+  CONFIRMED: "Đã xác nhận",
+  CANCELLED: "Đã hủy",
+  EXPIRED: "Hết hạn"
 };
 
 function formatCurrency(value) {
@@ -25,7 +25,7 @@ function formatDateTime(value) {
 function holdRemaining(holdExpiresAt) {
   if (!holdExpiresAt) return "-";
   const diffMs = new Date(holdExpiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return "�� h?t";
+  if (diffMs <= 0) return "Đã hết";
   const min = Math.floor(diffMs / 60000);
   const sec = Math.floor((diffMs % 60000) / 1000);
   return `${min}m ${sec}s`;
@@ -33,6 +33,7 @@ function holdRemaining(holdExpiresAt) {
 
 function HomePage() {
   const { user, logout } = useAuth();
+
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [roomTypes, setRoomTypes] = useState([]);
@@ -42,6 +43,7 @@ function HomePage() {
   const [vipInfo, setVipInfo] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingKey, setLoadingKey] = useState("");
@@ -58,18 +60,38 @@ function HomePage() {
 
   useEffect(() => {
     loadDefaultData();
-    const timer = setInterval(() => {
-      setBookings((prev) => [...prev]);
-    }, 1000);
+    const timer = setInterval(() => setBookings((prev) => [...prev]), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const confirmedBookings = useMemo(
-    () => bookings.filter((item) => item.status === "CONFIRMED").length,
-    [bookings]
-  );
+  const statusStats = useMemo(() => {
+    return bookings.reduce(
+      (acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      },
+      { HOLD: 0, CONFIRMED: 0, CANCELLED: 0, EXPIRED: 0 }
+    );
+  }, [bookings]);
 
-  const pendingHolds = useMemo(() => bookings.filter((item) => item.status === "HOLD").length, [bookings]);
+  const avgRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    return reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length;
+  }, [reviews]);
+
+  const nearestBookings = useMemo(() => {
+    return [...bookings]
+      .sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate))
+      .slice(0, 5);
+  }, [bookings]);
+
+  const availabilityRate = useMemo(() => {
+    if (!summary.length) return 0;
+    const total = summary.reduce((sum, item) => sum + Number(item.totalRooms || 0), 0);
+    const available = summary.reduce((sum, item) => sum + Number(item.availableRooms || 0), 0);
+    if (!total) return 0;
+    return Math.round((available / total) * 100);
+  }, [summary]);
 
   const loadDefaultData = async () => {
     try {
@@ -87,7 +109,7 @@ function HomePage() {
       setVipInfo(vipRes.data);
       setReviews(reviewRes.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng t?i du?c d? li?u trang kh�ch h�ng");
+      setError(err.response?.data?.message || "Không tải được dữ liệu trang khách hàng");
     }
   };
 
@@ -108,9 +130,9 @@ function HomePage() {
       ]);
       setRooms(roomRes.data);
       setSummary(summaryRes.data);
-      setMessage(`�� c?p nh?t danh s�ch ph�ng tr?ng t? ${checkIn} d?n ${checkOut}`);
+      setMessage(`Đã cập nhật dữ liệu phòng trống từ ${checkIn} đến ${checkOut}.`);
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng t�m du?c ph�ng tr?ng");
+      setError(err.response?.data?.message || "Không tìm được phòng trống");
     }
   };
 
@@ -118,7 +140,7 @@ function HomePage() {
     setError("");
     setMessage("");
     if (!checkIn || !checkOut) {
-      setError("Vui l�ng ch?n ng�y nh?n v� ng�y tr? ph�ng tru?c khi gi? ph�ng.");
+      setError("Vui lòng chọn ngày nhận và ngày trả phòng trước khi giữ phòng.");
       return;
     }
 
@@ -129,12 +151,10 @@ function HomePage() {
         checkInDate: checkIn,
         checkOutDate: checkOut
       });
-      setMessage(
-        `Gi? ph�ng th�nh c�ng cho booking #${res.data.id}. H?n gi? d?n ${formatDateTime(res.data.holdExpiresAt)}.`
-      );
+      setMessage(`Giữ phòng thành công cho booking #${res.data.id}, hạn giữ đến ${formatDateTime(res.data.holdExpiresAt)}.`);
       await refreshBookingsAndVip();
     } catch (err) {
-      setError(err.response?.data?.message || "Gi? ph�ng th?t b?i");
+      setError(err.response?.data?.message || "Giữ phòng thất bại");
     } finally {
       setLoadingKey("");
     }
@@ -146,10 +166,10 @@ function HomePage() {
     setLoadingKey(`pay-${bookingId}`);
     try {
       await client.post("/payments/mock-success", { bookingId });
-      setMessage(`Thanh to�n m� ph?ng th�nh c�ng cho booking #${bookingId}.`);
+      setMessage(`Thanh toán mô phỏng thành công cho booking #${bookingId}.`);
       await refreshBookingsAndVip();
     } catch (err) {
-      setError(err.response?.data?.message || "Thanh to�n th?t b?i");
+      setError(err.response?.data?.message || "Thanh toán thất bại");
     } finally {
       setLoadingKey("");
     }
@@ -161,10 +181,10 @@ function HomePage() {
     setLoadingKey(`cancel-${bookingId}`);
     try {
       await client.post(`/bookings/${bookingId}/cancel`);
-      setMessage(`�� h?y booking #${bookingId}.`);
+      setMessage(`Đã hủy booking #${bookingId}.`);
       await refreshBookingsAndVip();
     } catch (err) {
-      setError(err.response?.data?.message || "H?y booking th?t b?i");
+      setError(err.response?.data?.message || "Hủy booking thất bại");
     } finally {
       setLoadingKey("");
     }
@@ -174,7 +194,7 @@ function HomePage() {
     setError("");
     setLoadingKey(`pdf-${bookingId}`);
     try {
-      const res = await client.get(`/bookings/${bookingId}/pdf?purpose=Gi?y+x�c+nh?n+d?t+ph�ng`, {
+      const res = await client.get(`/bookings/${bookingId}/pdf?purpose=Giấy+xác+nhận+đặt+phòng`, {
         responseType: "blob"
       });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
@@ -186,7 +206,7 @@ function HomePage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng t?i du?c PDF");
+      setError(err.response?.data?.message || "Không tải được PDF");
     } finally {
       setLoadingKey("");
     }
@@ -201,9 +221,9 @@ function HomePage() {
       setReviewForm({ rating: 5, comment: "" });
       const reviewRes = await client.get("/reviews/hotel");
       setReviews(reviewRes.data);
-      setMessage("�� g?i d�nh gi� d?ch v? th�nh c�ng.");
+      setMessage("Đã gửi đánh giá dịch vụ thành công.");
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng g?i du?c d�nh gi�");
+      setError(err.response?.data?.message || "Không gửi được đánh giá");
     }
   };
 
@@ -211,153 +231,132 @@ function HomePage() {
     <div className="page-shell">
       <header className="topbar">
         <div>
-          <h1 className="brand-title">Rex Hotel Booking - C?ng kh�ch h�ng</h1>
-          <p className="brand-sub">
-            Xin ch�o {user.fullName} ({user.email}) | Vai tr�: {user.role}
-          </p>
+          <h1 className="brand-title">Rex Hotel Booking - Trung tâm khách hàng</h1>
+          <p className="brand-sub">Xin chào {user.fullName} ({user.email}) - vai trò: {user.role}</p>
         </div>
         <div className="topbar-actions">
-          <button type="button" className="btn-outline" onClick={loadDefaultData}>
-            L�m m?i d? li?u
-          </button>
-          <button type="button" onClick={logout}>
-            �ang xu?t
-          </button>
+          <button type="button" className="btn-outline" onClick={loadDefaultData}>Làm mới dữ liệu</button>
+          <button type="button" onClick={logout}>Đăng xuất</button>
         </div>
       </header>
 
-      <section className="grid grid-3" style={{ marginTop: 16 }}>
-        <article className="kpi">
-          <div className="kpi-label">Booking d� x�c nh?n</div>
-          <div className="kpi-value">{confirmedBookings}</div>
-        </article>
-        <article className="kpi">
-          <div className="kpi-label">Booking dang gi?</div>
-          <div className="kpi-value">{pendingHolds}</div>
-        </article>
-        <article className="kpi">
-          <div className="kpi-label">H?ng VIP hi?n t?i</div>
-          <div className="kpi-value">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</div>
-        </article>
+      <section className="hero-panel">
+        <h2 className="hero-title">Không gian điều phối lưu trú cá nhân</h2>
+        <p className="hero-sub">
+          Bảng điều khiển này hiển thị trạng thái đặt phòng, mức ưu đãi VIP, mức độ khả dụng của khách sạn và các mốc lưu trú quan trọng để bạn ra quyết định nhanh hơn.
+        </p>
+        <div className="hero-grid">
+          <div className="hero-chip">
+            <div className="hero-chip-label">Hạng thành viên</div>
+            <div className="hero-chip-value">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</div>
+          </div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Chiết khấu hiện tại</div>
+            <div className="hero-chip-value">{Math.round(Number(vipInfo?.discountRate || 0) * 100)}%</div>
+          </div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Booking đã xác nhận</div>
+            <div className="hero-chip-value">{statusStats.CONFIRMED}</div>
+          </div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Điểm đánh giá trung bình</div>
+            <div className="hero-chip-value">{avgRating.toFixed(1)}/5</div>
+          </div>
+        </div>
       </section>
 
-      {vipInfo && (
-        <p className="alert alert-warn">
-          Uu d�i VIP: {Number(vipInfo.discountRate) * 100}% | T?ng s? booking th�nh c�ng: {vipInfo.bookingCount}
-        </p>
-      )}
       {error && <p className="alert alert-error">{error}</p>}
       {message && <p className="alert alert-success">{message}</p>}
 
-      <section className="grid grid-2" style={{ marginTop: 16 }}>
-        <article className="card">
-          <h2>T�m ph�ng theo th?i gian</h2>
-          <p className="card-sub">Lu?ng BE: `/rooms`, `/rooms/available-summary`, `/bookings/hold`</p>
-
-          <form className="grid" onSubmit={searchAvailable}>
-            <div className="form-row">
-              <label>
-                Ng�y nh?n ph�ng
-                <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required />
-              </label>
-              <label>
-                Ng�y tr? ph�ng
-                <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required />
-              </label>
+      <section className="split-layout">
+        <div className="stack">
+          <article className="card">
+            <h2>Tổng quan booking</h2>
+            <div className="metric-grid">
+              <div className="metric-tile"><div className="metric-label">Đang giữ</div><div className="metric-value">{statusStats.HOLD}</div></div>
+              <div className="metric-tile"><div className="metric-label">Đã xác nhận</div><div className="metric-value">{statusStats.CONFIRMED}</div></div>
+              <div className="metric-tile"><div className="metric-label">Đã hủy</div><div className="metric-value">{statusStats.CANCELLED}</div></div>
+              <div className="metric-tile"><div className="metric-label">Hết hạn</div><div className="metric-value">{statusStats.EXPIRED}</div></div>
             </div>
-            <div className="form-actions">
-              <button type="submit">T�m ph�ng tr?ng</button>
-            </div>
-          </form>
+            <p className="card-sub">Thông tin này giúp bạn theo dõi chất lượng phiên đặt phòng và kịp xử lý booking HOLD.</p>
+          </article>
 
-          {!!summary.length && (
-            <div className="table-wrap" style={{ marginTop: 14 }}>
+          <article className="card">
+            <h2>Tìm phòng theo thời gian</h2>
+            <p className="card-sub">Tập trung vào dữ liệu khả dụng để chọn khung ngày tối ưu.</p>
+            <form className="grid" onSubmit={searchAvailable}>
+              <div className="form-row">
+                <label>Ngày nhận phòng<input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
+                <label>Ngày trả phòng<input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
+              </div>
+              <div className="form-actions"><button type="submit">Phân tích phòng trống</button></div>
+            </form>
+            {!!summary.length && (
+              <>
+                <div className="progress-row">
+                  <div className="progress-head"><span>Tỷ lệ phòng còn trống toàn hệ thống</span><strong>{availabilityRate}%</strong></div>
+                  <div className="progress-track"><div className="progress-fill" style={{ width: `${availabilityRate}%` }} /></div>
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Loại phòng</th><th>Tổng phòng</th><th>Đang bị giữ/đặt</th><th>Còn trống</th></tr></thead>
+                    <tbody>
+                      {summary.map((item) => (
+                        <tr key={item.roomTypeId}><td>{item.roomTypeName}</td><td>{item.totalRooms}</td><td>{item.reservedRooms}</td><td>{item.availableRooms}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </article>
+        </div>
+
+        <div className="stack">
+          <article className="card">
+            <h2>Lịch lưu trú gần nhất</h2>
+            <p className="card-sub">Các mốc check-in sắp tới và trạng thái tương ứng.</p>
+            <div className="timeline">
+              {nearestBookings.map((item) => (
+                <div className="timeline-item" key={item.id}>
+                  <p className="timeline-title">Booking #{item.id} - {item.roomCode}</p>
+                  <p className="timeline-meta">{formatDate(item.checkInDate)} đến {formatDate(item.checkOutDate)} | {BOOKING_STATUS_TEXT[item.status]}</p>
+                </div>
+              ))}
+              {!nearestBookings.length && <p className="card-sub">Chưa có booking nào.</p>}
+            </div>
+          </article>
+
+          <article className="card">
+            <h2>Loại phòng và mức giá</h2>
+            <div className="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Lo?i ph�ng</th>
-                    <th>T?ng ph�ng kh? d?ng</th>
-                    <th>�ang b? gi?/d?t</th>
-                    <th>C�n tr?ng</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Loại phòng</th><th>Giá cơ bản</th><th>Sức chứa</th><th>Mô tả</th></tr></thead>
                 <tbody>
-                  {summary.map((item) => (
-                    <tr key={item.roomTypeId}>
-                      <td>{item.roomTypeName}</td>
-                      <td>{item.totalRooms}</td>
-                      <td>{item.reservedRooms}</td>
-                      <td>{item.availableRooms}</td>
-                    </tr>
+                  {roomTypes.map((type) => (
+                    <tr key={type.id}><td>{type.name}</td><td>{formatCurrency(type.basePrice)}</td><td>{type.maxGuests} khách</td><td>{type.description || "-"}</td></tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </article>
-
-        <article className="card">
-          <h2>Danh m?c lo?i ph�ng</h2>
-          <p className="card-sub">Lu?ng BE: `/rooms/types`</p>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>T�n lo?i</th>
-                  <th>Gi� co b?n/d�m</th>
-                  <th>S?c ch?a t?i da</th>
-                  <th>M� t?</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roomTypes.map((type) => (
-                  <tr key={type.id}>
-                    <td>{type.name}</td>
-                    <td>{formatCurrency(type.basePrice)}</td>
-                    <td>{type.maxGuests} kh�ch</td>
-                    <td>{type.description || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </article>
+          </article>
+        </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
-        <h2>Danh s�ch ph�ng s?n s�ng d?t</h2>
-        <p className="card-sub">Lu?ng BE: gi? ph�ng theo t?ng ph�ng c? th?</p>
+      <section className="card" style={{ marginTop: 14 }}>
+        <h2>Danh sách phòng sẵn sàng đặt</h2>
+        <p className="card-sub">Trực tiếp giữ phòng theo mã phòng khi đã xác định khung ngày phù hợp.</p>
         <div className="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>M� ph�ng</th>
-                <th>Lo?i ph�ng</th>
-                <th>T?ng</th>
-                <th>Gi�/d�m</th>
-                <th>S?c ch?a</th>
-                <th>Tr?ng th�i</th>
-                <th>Thao t�c</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Mã phòng</th><th>Loại phòng</th><th>Tầng</th><th>Giá/đêm</th><th>Sức chứa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
             <tbody>
               {rooms.map((room) => (
                 <tr key={room.id}>
-                  <td>{room.code}</td>
-                  <td>{room.roomTypeName}</td>
-                  <td>{room.floorNumber}</td>
-                  <td>{formatCurrency(room.basePrice)}</td>
-                  <td>{room.maxGuests} kh�ch</td>
+                  <td>{room.code}</td><td>{room.roomTypeName}</td><td>{room.floorNumber}</td><td>{formatCurrency(room.basePrice)}</td><td>{room.maxGuests} khách</td>
+                  <td><span className={`badge badge-${room.status}`}>{room.status}</span></td>
                   <td>
-                    <span className={`badge badge-${room.status}`}>{room.status}</span>
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => holdRoom(room.id)}
-                      disabled={loadingKey === `hold-${room.id}`}
-                    >
-                      {loadingKey === `hold-${room.id}` ? "�ang gi?..." : "Gi? ph�ng"}
+                    <button type="button" onClick={() => holdRoom(room.id)} disabled={loadingKey === `hold-${room.id}`}>
+                      {loadingKey === `hold-${room.id}` ? "Đang giữ..." : "Giữ phòng"}
                     </button>
                   </td>
                 </tr>
@@ -367,67 +366,34 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
-        <h2>L?ch s? booking c?a t�i</h2>
-        <p className="card-sub">Lu?ng BE: thanh to�n m� ph?ng, h?y booking, t?i PDF</p>
+      <section className="card" style={{ marginTop: 14 }}>
+        <h2>Lịch sử booking của tôi</h2>
         <div className="table-wrap">
           <table>
-            <thead>
-              <tr>
-                <th>M� booking</th>
-                <th>Ph�ng</th>
-                <th>Ng�y ?</th>
-                <th>Tr?ng th�i</th>
-                <th>S? ti?n</th>
-                <th>H?n gi? c�n l?i</th>
-                <th>Thao t�c</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Mã</th><th>Phòng</th><th>Ngày ở</th><th>Trạng thái</th><th>Tổng tiền</th><th>Hạn giữ còn lại</th><th>Thao tác</th></tr></thead>
             <tbody>
               {bookings.map((booking) => (
                 <tr key={booking.id}>
                   <td>#{booking.id}</td>
-                  <td>
-                    {booking.roomCode} - {booking.roomTypeName}
-                  </td>
-                  <td>
-                    {formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}
-                  </td>
-                  <td>
-                    <span className={`badge badge-${booking.status}`}>
-                      {BOOKING_STATUS_TEXT[booking.status] || booking.status}
-                    </span>
-                  </td>
+                  <td>{booking.roomCode} - {booking.roomTypeName}</td>
+                  <td>{formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}</td>
+                  <td><span className={`badge badge-${booking.status}`}>{BOOKING_STATUS_TEXT[booking.status] || booking.status}</span></td>
                   <td>{formatCurrency(booking.totalAmount)}</td>
                   <td>{booking.status === "HOLD" ? holdRemaining(booking.holdExpiresAt) : "-"}</td>
                   <td>
                     <div className="inline-actions">
                       {booking.status === "HOLD" && (
-                        <button
-                          type="button"
-                          onClick={() => payMock(booking.id)}
-                          disabled={loadingKey === `pay-${booking.id}`}
-                        >
-                          {loadingKey === `pay-${booking.id}` ? "�ang x? l�..." : "Thanh to�n m� ph?ng"}
+                        <button type="button" onClick={() => payMock(booking.id)} disabled={loadingKey === `pay-${booking.id}`}>
+                          {loadingKey === `pay-${booking.id}` ? "Đang xử lý..." : "Thanh toán mô phỏng"}
                         </button>
                       )}
                       {(booking.status === "HOLD" || booking.status === "CONFIRMED") && (
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => cancelBooking(booking.id)}
-                          disabled={loadingKey === `cancel-${booking.id}`}
-                        >
-                          {loadingKey === `cancel-${booking.id}` ? "�ang h?y..." : "H?y"}
+                        <button type="button" className="btn-danger" onClick={() => cancelBooking(booking.id)} disabled={loadingKey === `cancel-${booking.id}`}>
+                          {loadingKey === `cancel-${booking.id}` ? "Đang hủy..." : "Hủy"}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="btn-outline"
-                        onClick={() => downloadPdf(booking.id)}
-                        disabled={loadingKey === `pdf-${booking.id}`}
-                      >
-                        {loadingKey === `pdf-${booking.id}` ? "�ang t?i..." : "T?i PDF"}
+                      <button type="button" className="btn-outline" onClick={() => downloadPdf(booking.id)} disabled={loadingKey === `pdf-${booking.id}`}>
+                        {loadingKey === `pdf-${booking.id}` ? "Đang tải..." : "Tải PDF"}
                       </button>
                     </div>
                   </td>
@@ -438,56 +404,32 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="grid grid-2" style={{ marginTop: 16 }}>
+      <section className="grid grid-2" style={{ marginTop: 14 }}>
         <article className="card">
-          <h2>��nh gi� d?ch v? kh�ch s?n</h2>
-          <p className="card-sub">Lu?ng BE: `/reviews` v� `/reviews/hotel`</p>
-
+          <h2>Đánh giá dịch vụ</h2>
           <form className="grid" onSubmit={submitReview}>
             <label>
-              S? sao
-              <select
-                value={reviewForm.rating}
-                onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}
-              >
-                <option value={5}>5 sao - R?t t?t</option>
-                <option value={4}>4 sao - T?t</option>
-                <option value={3}>3 sao - Kh�</option>
-                <option value={2}>2 sao - C?n c?i thi?n</option>
-                <option value={1}>1 sao - Kh�ng h�i l�ng</option>
+              Số sao
+              <select value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}>
+                <option value={5}>5 sao - Rất tốt</option>
+                <option value={4}>4 sao - Tốt</option>
+                <option value={3}>3 sao - Khá</option>
+                <option value={2}>2 sao - Cần cải thiện</option>
+                <option value={1}>1 sao - Không hài lòng</option>
               </select>
             </label>
             <label>
-              Nh?n x�t
-              <textarea
-                value={reviewForm.comment}
-                onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
-                placeholder="Chia s? tr?i nghi?m th?c t? c?a b?n"
-                maxLength={500}
-                required
-              />
+              Nhận xét
+              <textarea value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} maxLength={500} required />
             </label>
-            <button type="submit">G?i d�nh gi�</button>
+            <button type="submit">Gửi đánh giá</button>
           </form>
-
-          <div className="table-wrap" style={{ marginTop: 14 }}>
+          <div className="table-wrap" style={{ marginTop: 12 }}>
             <table>
-              <thead>
-                <tr>
-                  <th>Kh�ch h�ng</th>
-                  <th>�i?m</th>
-                  <th>N?i dung</th>
-                  <th>Th?i gian</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Khách hàng</th><th>Điểm</th><th>Nội dung</th><th>Thời gian</th></tr></thead>
               <tbody>
                 {reviews.map((review) => (
-                  <tr key={review.id}>
-                    <td>{review.fullName}</td>
-                    <td>{review.rating}/5</td>
-                    <td>{review.comment}</td>
-                    <td>{formatDateTime(review.createdAt)}</td>
-                  </tr>
+                  <tr key={review.id}><td>{review.fullName}</td><td>{review.rating}/5</td><td>{review.comment}</td><td>{formatDateTime(review.createdAt)}</td></tr>
                 ))}
               </tbody>
             </table>
@@ -495,22 +437,17 @@ function HomePage() {
         </article>
 
         <article className="card">
-          <h2>Th�ng tin v? tr� & h? tr?</h2>
-          <p className="card-sub">B? sung lu?ng tu v?n ngu?i d�ng nhanh cho b�i demo d? �n</p>
-
+          <h2>Thông tin vị trí và hỗ trợ</h2>
           <iframe
-            title="B?n d? Rex S�i G�n"
+            title="Bản đồ Rex Sài Gòn"
             width="100%"
-            height="240"
+            height="230"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            style={{ border: "1px solid #d8d3c8", borderRadius: 12 }}
+            style={{ border: "1px solid #d9e0e7", borderRadius: 12 }}
             src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed"
           />
-
-          <div style={{ marginTop: 14 }}>
-            <SupportChatbot />
-          </div>
+          <div style={{ marginTop: 12 }}><SupportChatbot /></div>
         </article>
       </section>
     </div>
