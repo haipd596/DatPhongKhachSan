@@ -10,6 +10,13 @@ const BOOKING_STATUS_TEXT = {
   EXPIRED: "Hết hạn"
 };
 
+const STATUS_COLORS = {
+  HOLD: "#ea580c",
+  CONFIRMED: "#059669",
+  CANCELLED: "#dc2626",
+  EXPIRED: "#9333ea"
+};
+
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString("vi-VN") + " VND";
 }
@@ -31,9 +38,72 @@ function holdRemaining(holdExpiresAt) {
   return `${min}m ${sec}s`;
 }
 
+function BarChart({ data }) {
+  const width = 360;
+  const height = 160;
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const barW = width / Math.max(1, data.length);
+
+  return (
+    <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Biểu đồ cột trạng thái booking">
+      {data.map((item, index) => {
+        const ratio = item.value / max;
+        const h = ratio * 110;
+        const x = index * barW + 18;
+        const y = 130 - h;
+        return (
+          <g key={item.label}>
+            <rect x={x} y={y} width={barW - 34} height={h} fill={item.color} rx="6" />
+            <text x={x + (barW - 34) / 2} y="146" textAnchor="middle" fontSize="10" fill="#475569">
+              {item.label}
+            </text>
+            <text x={x + (barW - 34) / 2} y={y - 4} textAnchor="middle" fontSize="10" fill="#0f172a">
+              {item.value}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function LineChart({ data }) {
+  const width = 360;
+  const height = 160;
+  const max = Math.max(1, ...data.map((d) => d.value));
+  const stepX = data.length > 1 ? 300 / (data.length - 1) : 0;
+
+  const points = data
+    .map((item, idx) => {
+      const x = 30 + idx * stepX;
+      const y = 130 - (item.value / max) * 100;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Biểu đồ xu hướng booking theo tháng">
+      <line x1="30" y1="130" x2="340" y2="130" stroke="#cbd5e1" strokeWidth="1" />
+      <line x1="30" y1="20" x2="30" y2="130" stroke="#cbd5e1" strokeWidth="1" />
+      <polyline points={points} fill="none" stroke="#0f7d67" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((item, idx) => {
+        const x = 30 + idx * stepX;
+        const y = 130 - (item.value / max) * 100;
+        return (
+          <g key={item.label}>
+            <circle cx={x} cy={y} r="4" fill="#0f7d67" />
+            <text x={x} y="145" textAnchor="middle" fontSize="10" fill="#475569">
+              {item.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 function HomePage() {
   const { user, logout } = useAuth();
-
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [roomTypes, setRoomTypes] = useState([]);
@@ -43,7 +113,6 @@ function HomePage() {
   const [vipInfo, setVipInfo] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
-
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingKey, setLoadingKey] = useState("");
@@ -64,26 +133,27 @@ function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  const statusStats = useMemo(() => {
-    return bookings.reduce(
-      (acc, item) => {
-        acc[item.status] = (acc[item.status] || 0) + 1;
-        return acc;
-      },
-      { HOLD: 0, CONFIRMED: 0, CANCELLED: 0, EXPIRED: 0 }
-    );
-  }, [bookings]);
+  const statusStats = useMemo(
+    () =>
+      bookings.reduce(
+        (acc, item) => {
+          acc[item.status] = (acc[item.status] || 0) + 1;
+          return acc;
+        },
+        { HOLD: 0, CONFIRMED: 0, CANCELLED: 0, EXPIRED: 0 }
+      ),
+    [bookings]
+  );
 
   const avgRating = useMemo(() => {
     if (!reviews.length) return 0;
     return reviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / reviews.length;
   }, [reviews]);
 
-  const nearestBookings = useMemo(() => {
-    return [...bookings]
-      .sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate))
-      .slice(0, 5);
-  }, [bookings]);
+  const nearestBookings = useMemo(
+    () => [...bookings].sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate)).slice(0, 5),
+    [bookings]
+  );
 
   const availabilityRate = useMemo(() => {
     if (!summary.length) return 0;
@@ -92,6 +162,39 @@ function HomePage() {
     if (!total) return 0;
     return Math.round((available / total) * 100);
   }, [summary]);
+
+  const monthlyBookingTrend = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months.push({
+        key,
+        label: `T${d.getMonth() + 1}`,
+        value: 0
+      });
+    }
+    bookings.forEach((booking) => {
+      const source = booking.createdAt || booking.checkInDate;
+      if (!source) return;
+      const d = new Date(source);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const target = months.find((m) => m.key === key);
+      if (target) target.value += 1;
+    });
+    return months;
+  }, [bookings]);
+
+  const bookingStatusChart = useMemo(
+    () => [
+      { label: "HOLD", value: statusStats.HOLD, color: STATUS_COLORS.HOLD },
+      { label: "CONF", value: statusStats.CONFIRMED, color: STATUS_COLORS.CONFIRMED },
+      { label: "CANCEL", value: statusStats.CANCELLED, color: STATUS_COLORS.CANCELLED },
+      { label: "EXPIRE", value: statusStats.EXPIRED, color: STATUS_COLORS.EXPIRED }
+    ],
+    [statusStats]
+  );
 
   const loadDefaultData = async () => {
     try {
@@ -229,227 +332,210 @@ function HomePage() {
 
   return (
     <div className="page-shell">
-      <header className="topbar">
+      <header className="topbar no-print">
         <div>
           <h1 className="brand-title">Rex Hotel Booking - Trung tâm khách hàng</h1>
           <p className="brand-sub">Xin chào {user.fullName} ({user.email}) - vai trò: {user.role}</p>
         </div>
         <div className="topbar-actions">
           <button type="button" className="btn-outline" onClick={loadDefaultData}>Làm mới dữ liệu</button>
+          <button type="button" className="btn-outline" onClick={() => window.print()}>In báo cáo PDF</button>
           <button type="button" onClick={logout}>Đăng xuất</button>
         </div>
       </header>
 
-      <section className="hero-panel">
+      <section id="tong-quan" className="hero-panel">
         <h2 className="hero-title">Không gian điều phối lưu trú cá nhân</h2>
-        <p className="hero-sub">
-          Bảng điều khiển này hiển thị trạng thái đặt phòng, mức ưu đãi VIP, mức độ khả dụng của khách sạn và các mốc lưu trú quan trọng để bạn ra quyết định nhanh hơn.
-        </p>
+        <p className="hero-sub">Theo dõi trạng thái booking, khả năng đặt phòng và trải nghiệm dịch vụ theo thời gian thực trên một giao diện thống nhất.</p>
         <div className="hero-grid">
-          <div className="hero-chip">
-            <div className="hero-chip-label">Hạng thành viên</div>
-            <div className="hero-chip-value">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</div>
-          </div>
-          <div className="hero-chip">
-            <div className="hero-chip-label">Chiết khấu hiện tại</div>
-            <div className="hero-chip-value">{Math.round(Number(vipInfo?.discountRate || 0) * 100)}%</div>
-          </div>
-          <div className="hero-chip">
-            <div className="hero-chip-label">Booking đã xác nhận</div>
-            <div className="hero-chip-value">{statusStats.CONFIRMED}</div>
-          </div>
-          <div className="hero-chip">
-            <div className="hero-chip-label">Điểm đánh giá trung bình</div>
-            <div className="hero-chip-value">{avgRating.toFixed(1)}/5</div>
-          </div>
+          <div className="hero-chip"><div className="hero-chip-label">Hạng thành viên</div><div className="hero-chip-value">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</div></div>
+          <div className="hero-chip"><div className="hero-chip-label">Chiết khấu</div><div className="hero-chip-value">{Math.round(Number(vipInfo?.discountRate || 0) * 100)}%</div></div>
+          <div className="hero-chip"><div className="hero-chip-label">Booking xác nhận</div><div className="hero-chip-value">{statusStats.CONFIRMED}</div></div>
+          <div className="hero-chip"><div className="hero-chip-label">Điểm đánh giá TB</div><div className="hero-chip-value">{avgRating.toFixed(1)}/5</div></div>
         </div>
       </section>
 
       {error && <p className="alert alert-error">{error}</p>}
       {message && <p className="alert alert-success">{message}</p>}
 
-      <section className="split-layout">
-        <div className="stack">
-          <article className="card">
-            <h2>Tổng quan booking</h2>
-            <div className="metric-grid">
-              <div className="metric-tile"><div className="metric-label">Đang giữ</div><div className="metric-value">{statusStats.HOLD}</div></div>
-              <div className="metric-tile"><div className="metric-label">Đã xác nhận</div><div className="metric-value">{statusStats.CONFIRMED}</div></div>
-              <div className="metric-tile"><div className="metric-label">Đã hủy</div><div className="metric-value">{statusStats.CANCELLED}</div></div>
-              <div className="metric-tile"><div className="metric-label">Hết hạn</div><div className="metric-value">{statusStats.EXPIRED}</div></div>
-            </div>
-            <p className="card-sub">Thông tin này giúp bạn theo dõi chất lượng phiên đặt phòng và kịp xử lý booking HOLD.</p>
-          </article>
+      <div className="workspace">
+        <aside className="sidebar no-print">
+          <h3>Điều hướng nhanh</h3>
+          <div className="side-list">
+            <a className="side-link" href="#tong-quan">Tổng quan</a>
+            <a className="side-link" href="#tim-phong">Phân tích phòng trống</a>
+            <a className="side-link" href="#phong-trong">Danh sách phòng</a>
+            <a className="side-link" href="#booking">Lịch sử booking</a>
+            <a className="side-link" href="#danh-gia">Đánh giá dịch vụ</a>
+            <a className="side-link" href="#ho-tro">Hỗ trợ và bản đồ</a>
+            <a className="side-link" href="#bao-cao">Bản in báo cáo</a>
+          </div>
+        </aside>
 
-          <article className="card">
-            <h2>Tìm phòng theo thời gian</h2>
-            <p className="card-sub">Tập trung vào dữ liệu khả dụng để chọn khung ngày tối ưu.</p>
-            <form className="grid" onSubmit={searchAvailable}>
-              <div className="form-row">
-                <label>Ngày nhận phòng<input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
-                <label>Ngày trả phòng<input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
-              </div>
-              <div className="form-actions"><button type="submit">Phân tích phòng trống</button></div>
-            </form>
-            {!!summary.length && (
-              <>
-                <div className="progress-row">
-                  <div className="progress-head"><span>Tỷ lệ phòng còn trống toàn hệ thống</span><strong>{availabilityRate}%</strong></div>
-                  <div className="progress-track"><div className="progress-fill" style={{ width: `${availabilityRate}%` }} /></div>
+        <main className="content-stack">
+          <section className="split-layout">
+            <div className="stack">
+              <article className="card">
+                <h2>Phân tích trạng thái booking</h2>
+                <div className="metric-grid">
+                  <div className="metric-tile"><div className="metric-label">Đang giữ</div><div className="metric-value">{statusStats.HOLD}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Đã xác nhận</div><div className="metric-value">{statusStats.CONFIRMED}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Đã hủy</div><div className="metric-value">{statusStats.CANCELLED}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Hết hạn</div><div className="metric-value">{statusStats.EXPIRED}</div></div>
                 </div>
+
+                <div className="chart-grid" style={{ marginTop: 12 }}>
+                  <div className="chart-box">
+                    <p className="chart-title">Biểu đồ cột theo trạng thái</p>
+                    <BarChart data={bookingStatusChart} />
+                    <div className="chart-legend">
+                      {bookingStatusChart.map((item) => (
+                        <span key={item.label}><span className="legend-dot" style={{ background: item.color }} />{item.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="chart-box">
+                    <p className="chart-title">Xu hướng booking 6 tháng gần nhất</p>
+                    <LineChart data={monthlyBookingTrend} />
+                  </div>
+                </div>
+              </article>
+
+              <article id="tim-phong" className="card">
+                <h2>Phân tích phòng trống theo thời gian</h2>
+                <form className="grid" onSubmit={searchAvailable}>
+                  <div className="form-row">
+                    <label>Ngày nhận phòng<input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
+                    <label>Ngày trả phòng<input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
+                  </div>
+                  <div className="form-actions"><button type="submit">Phân tích phòng trống</button></div>
+                </form>
+                {!!summary.length && (
+                  <>
+                    <div className="progress-row">
+                      <div className="progress-head"><span>Tỷ lệ phòng trống toàn hệ thống</span><strong>{availabilityRate}%</strong></div>
+                      <div className="progress-track"><div className="progress-fill" style={{ width: `${availabilityRate}%` }} /></div>
+                    </div>
+                    <div className="table-wrap">
+                      <table>
+                        <thead><tr><th>Loại phòng</th><th>Tổng phòng</th><th>Đang giữ/đặt</th><th>Còn trống</th></tr></thead>
+                        <tbody>{summary.map((item) => <tr key={item.roomTypeId}><td>{item.roomTypeName}</td><td>{item.totalRooms}</td><td>{item.reservedRooms}</td><td>{item.availableRooms}</td></tr>)}</tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </article>
+            </div>
+
+            <div className="stack">
+              <article className="card">
+                <h2>Lịch lưu trú gần nhất</h2>
+                <div className="timeline">
+                  {nearestBookings.map((item) => (
+                    <div className="timeline-item" key={item.id}>
+                      <p className="timeline-title">Booking #{item.id} - {item.roomCode}</p>
+                      <p className="timeline-meta">{formatDate(item.checkInDate)} đến {formatDate(item.checkOutDate)} | {BOOKING_STATUS_TEXT[item.status]}</p>
+                    </div>
+                  ))}
+                  {!nearestBookings.length && <p className="card-sub">Chưa có booking nào.</p>}
+                </div>
+              </article>
+
+              <article className="card">
+                <h2>Danh mục loại phòng</h2>
                 <div className="table-wrap">
                   <table>
-                    <thead><tr><th>Loại phòng</th><th>Tổng phòng</th><th>Đang bị giữ/đặt</th><th>Còn trống</th></tr></thead>
-                    <tbody>
-                      {summary.map((item) => (
-                        <tr key={item.roomTypeId}><td>{item.roomTypeName}</td><td>{item.totalRooms}</td><td>{item.reservedRooms}</td><td>{item.availableRooms}</td></tr>
-                      ))}
-                    </tbody>
+                    <thead><tr><th>Loại phòng</th><th>Giá cơ bản</th><th>Sức chứa</th><th>Mô tả</th></tr></thead>
+                    <tbody>{roomTypes.map((type) => <tr key={type.id}><td>{type.name}</td><td>{formatCurrency(type.basePrice)}</td><td>{type.maxGuests} khách</td><td>{type.description || "-"}</td></tr>)}</tbody>
                   </table>
                 </div>
-              </>
-            )}
-          </article>
-        </div>
-
-        <div className="stack">
-          <article className="card">
-            <h2>Lịch lưu trú gần nhất</h2>
-            <p className="card-sub">Các mốc check-in sắp tới và trạng thái tương ứng.</p>
-            <div className="timeline">
-              {nearestBookings.map((item) => (
-                <div className="timeline-item" key={item.id}>
-                  <p className="timeline-title">Booking #{item.id} - {item.roomCode}</p>
-                  <p className="timeline-meta">{formatDate(item.checkInDate)} đến {formatDate(item.checkOutDate)} | {BOOKING_STATUS_TEXT[item.status]}</p>
-                </div>
-              ))}
-              {!nearestBookings.length && <p className="card-sub">Chưa có booking nào.</p>}
+              </article>
             </div>
-          </article>
+          </section>
 
-          <article className="card">
-            <h2>Loại phòng và mức giá</h2>
+          <section id="phong-trong" className="card">
+            <h2>Danh sách phòng sẵn sàng đặt</h2>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Loại phòng</th><th>Giá cơ bản</th><th>Sức chứa</th><th>Mô tả</th></tr></thead>
+                <thead><tr><th>Mã phòng</th><th>Loại phòng</th><th>Tầng</th><th>Giá/đêm</th><th>Sức chứa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
                 <tbody>
-                  {roomTypes.map((type) => (
-                    <tr key={type.id}><td>{type.name}</td><td>{formatCurrency(type.basePrice)}</td><td>{type.maxGuests} khách</td><td>{type.description || "-"}</td></tr>
+                  {rooms.map((room) => (
+                    <tr key={room.id}>
+                      <td>{room.code}</td><td>{room.roomTypeName}</td><td>{room.floorNumber}</td><td>{formatCurrency(room.basePrice)}</td><td>{room.maxGuests} khách</td>
+                      <td><span className={`badge badge-${room.status}`}>{room.status}</span></td>
+                      <td><button type="button" onClick={() => holdRoom(room.id)} disabled={loadingKey === `hold-${room.id}`}>{loadingKey === `hold-${room.id}` ? "Đang giữ..." : "Giữ phòng"}</button></td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </article>
-        </div>
-      </section>
+          </section>
 
-      <section className="card" style={{ marginTop: 14 }}>
-        <h2>Danh sách phòng sẵn sàng đặt</h2>
-        <p className="card-sub">Trực tiếp giữ phòng theo mã phòng khi đã xác định khung ngày phù hợp.</p>
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Mã phòng</th><th>Loại phòng</th><th>Tầng</th><th>Giá/đêm</th><th>Sức chứa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-            <tbody>
-              {rooms.map((room) => (
-                <tr key={room.id}>
-                  <td>{room.code}</td><td>{room.roomTypeName}</td><td>{room.floorNumber}</td><td>{formatCurrency(room.basePrice)}</td><td>{room.maxGuests} khách</td>
-                  <td><span className={`badge badge-${room.status}`}>{room.status}</span></td>
-                  <td>
-                    <button type="button" onClick={() => holdRoom(room.id)} disabled={loadingKey === `hold-${room.id}`}>
-                      {loadingKey === `hold-${room.id}` ? "Đang giữ..." : "Giữ phòng"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <section id="booking" className="card">
+            <h2>Lịch sử booking của tôi</h2>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>Mã</th><th>Phòng</th><th>Ngày ở</th><th>Trạng thái</th><th>Tổng tiền</th><th>Hạn giữ còn lại</th><th>Thao tác</th></tr></thead>
+                <tbody>
+                  {bookings.map((booking) => (
+                    <tr key={booking.id}>
+                      <td>#{booking.id}</td>
+                      <td>{booking.roomCode} - {booking.roomTypeName}</td>
+                      <td>{formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}</td>
+                      <td><span className={`badge badge-${booking.status}`}>{BOOKING_STATUS_TEXT[booking.status] || booking.status}</span></td>
+                      <td>{formatCurrency(booking.totalAmount)}</td>
+                      <td>{booking.status === "HOLD" ? holdRemaining(booking.holdExpiresAt) : "-"}</td>
+                      <td>
+                        <div className="inline-actions">
+                          {booking.status === "HOLD" && <button type="button" onClick={() => payMock(booking.id)} disabled={loadingKey === `pay-${booking.id}`}>{loadingKey === `pay-${booking.id}` ? "Đang xử lý..." : "Thanh toán mô phỏng"}</button>}
+                          {(booking.status === "HOLD" || booking.status === "CONFIRMED") && <button type="button" className="btn-danger" onClick={() => cancelBooking(booking.id)} disabled={loadingKey === `cancel-${booking.id}`}>{loadingKey === `cancel-${booking.id}` ? "Đang hủy..." : "Hủy"}</button>}
+                          <button type="button" className="btn-outline" onClick={() => downloadPdf(booking.id)} disabled={loadingKey === `pdf-${booking.id}`}>{loadingKey === `pdf-${booking.id}` ? "Đang tải..." : "Tải PDF"}</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-      <section className="card" style={{ marginTop: 14 }}>
-        <h2>Lịch sử booking của tôi</h2>
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Mã</th><th>Phòng</th><th>Ngày ở</th><th>Trạng thái</th><th>Tổng tiền</th><th>Hạn giữ còn lại</th><th>Thao tác</th></tr></thead>
-            <tbody>
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>#{booking.id}</td>
-                  <td>{booking.roomCode} - {booking.roomTypeName}</td>
-                  <td>{formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}</td>
-                  <td><span className={`badge badge-${booking.status}`}>{BOOKING_STATUS_TEXT[booking.status] || booking.status}</span></td>
-                  <td>{formatCurrency(booking.totalAmount)}</td>
-                  <td>{booking.status === "HOLD" ? holdRemaining(booking.holdExpiresAt) : "-"}</td>
-                  <td>
-                    <div className="inline-actions">
-                      {booking.status === "HOLD" && (
-                        <button type="button" onClick={() => payMock(booking.id)} disabled={loadingKey === `pay-${booking.id}`}>
-                          {loadingKey === `pay-${booking.id}` ? "Đang xử lý..." : "Thanh toán mô phỏng"}
-                        </button>
-                      )}
-                      {(booking.status === "HOLD" || booking.status === "CONFIRMED") && (
-                        <button type="button" className="btn-danger" onClick={() => cancelBooking(booking.id)} disabled={loadingKey === `cancel-${booking.id}`}>
-                          {loadingKey === `cancel-${booking.id}` ? "Đang hủy..." : "Hủy"}
-                        </button>
-                      )}
-                      <button type="button" className="btn-outline" onClick={() => downloadPdf(booking.id)} disabled={loadingKey === `pdf-${booking.id}`}>
-                        {loadingKey === `pdf-${booking.id}` ? "Đang tải..." : "Tải PDF"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+          <section className="grid grid-2">
+            <article id="danh-gia" className="card">
+              <h2>Đánh giá dịch vụ</h2>
+              <form className="grid" onSubmit={submitReview}>
+                <label>Số sao
+                  <select value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}>
+                    <option value={5}>5 sao - Rất tốt</option><option value={4}>4 sao - Tốt</option><option value={3}>3 sao - Khá</option><option value={2}>2 sao - Cần cải thiện</option><option value={1}>1 sao - Không hài lòng</option>
+                  </select>
+                </label>
+                <label>Nhận xét<textarea value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} maxLength={500} required /></label>
+                <button type="submit">Gửi đánh giá</button>
+              </form>
+              <div className="table-wrap" style={{ marginTop: 12 }}>
+                <table>
+                  <thead><tr><th>Khách hàng</th><th>Điểm</th><th>Nội dung</th><th>Thời gian</th></tr></thead>
+                  <tbody>{reviews.map((review) => <tr key={review.id}><td>{review.fullName}</td><td>{review.rating}/5</td><td>{review.comment}</td><td>{formatDateTime(review.createdAt)}</td></tr>)}</tbody>
+                </table>
+              </div>
+            </article>
 
-      <section className="grid grid-2" style={{ marginTop: 14 }}>
-        <article className="card">
-          <h2>Đánh giá dịch vụ</h2>
-          <form className="grid" onSubmit={submitReview}>
-            <label>
-              Số sao
-              <select value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}>
-                <option value={5}>5 sao - Rất tốt</option>
-                <option value={4}>4 sao - Tốt</option>
-                <option value={3}>3 sao - Khá</option>
-                <option value={2}>2 sao - Cần cải thiện</option>
-                <option value={1}>1 sao - Không hài lòng</option>
-              </select>
-            </label>
-            <label>
-              Nhận xét
-              <textarea value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} maxLength={500} required />
-            </label>
-            <button type="submit">Gửi đánh giá</button>
-          </form>
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table>
-              <thead><tr><th>Khách hàng</th><th>Điểm</th><th>Nội dung</th><th>Thời gian</th></tr></thead>
-              <tbody>
-                {reviews.map((review) => (
-                  <tr key={review.id}><td>{review.fullName}</td><td>{review.rating}/5</td><td>{review.comment}</td><td>{formatDateTime(review.createdAt)}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </article>
+            <article id="ho-tro" className="card">
+              <h2>Thông tin vị trí và hỗ trợ</h2>
+              <iframe title="Bản đồ Rex Sài Gòn" width="100%" height="230" loading="lazy" referrerPolicy="no-referrer-when-downgrade" style={{ border: "1px solid #d9e0e7", borderRadius: 12 }} src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed" />
+              <div style={{ marginTop: 12 }}><SupportChatbot /></div>
+            </article>
+          </section>
 
-        <article className="card">
-          <h2>Thông tin vị trí và hỗ trợ</h2>
-          <iframe
-            title="Bản đồ Rex Sài Gòn"
-            width="100%"
-            height="230"
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            style={{ border: "1px solid #d9e0e7", borderRadius: 12 }}
-            src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed"
-          />
-          <div style={{ marginTop: 12 }}><SupportChatbot /></div>
-        </article>
-      </section>
+          <section id="bao-cao" className="card print-only">
+            <h2>Báo cáo tóm tắt khách hàng</h2>
+            <div className="report-grid">
+              <div className="report-item"><strong>Khách hàng</strong><p>{user.fullName} - {user.email}</p></div>
+              <div className="report-item"><strong>Hạng VIP</strong><p>{vipInfo?.vipLevel || "NORMAL"} ({Math.round(Number(vipInfo?.discountRate || 0) * 100)}%)</p></div>
+              <div className="report-item"><strong>Booking xác nhận</strong><p>{statusStats.CONFIRMED}</p></div>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
