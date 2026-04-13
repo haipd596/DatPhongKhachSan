@@ -5,7 +5,7 @@ function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <p className="center-text">Dang tai...</p>;
+    return <p className="center-text">Đang tải...</p>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;

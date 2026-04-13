@@ -11,7 +11,7 @@ import ManagerPage from "./pages/ManagerPage";
 function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) {
-    return <p className="center-text">Dang tai...</p>;
+    return <p className="center-text">Đang tải...</p>;
   }
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -19,7 +19,7 @@ function RootRedirect() {
   if (user.role === "MANAGER") {
     return <Navigate to="/manager" replace />;
   }
-  return <HomePage />;
+  return <Navigate to="/customer" replace />;
 }
 
 function App() {

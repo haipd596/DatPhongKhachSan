@@ -15,43 +15,58 @@ function RegisterPage() {
     try {
       const res = await client.post("/auth/register", form);
       login(res.data);
-      navigate("/");
+      navigate("/customer");
     } catch (err) {
-      setError(err.response?.data?.message || "Dang ky that bai");
+      setError(err.response?.data?.message || "Ðang ký th?t b?i");
     }
   };
 
   return (
-    <div className="auth-container">
-      <h1>Dang ky tai khoan</h1>
-      <form onSubmit={onSubmit} className="auth-form">
-        <input
-          type="text"
-          placeholder="Ho ten"
-          value={form.fullName}
-          onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Mat khau"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
-        {error && <p className="error">{error}</p>}
-        <button type="submit">Dang ky</button>
-      </form>
-      <p>
-        Da co tai khoan? <Link to="/login">Dang nhap</Link>
-      </p>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <h1 className="auth-title">Ðang ký tài kho?n khách hàng</h1>
+        <p className="auth-sub">T?o tài kho?n d? d?t phòng, theo dõi VIP và t?i phi?u xác nh?n PDF.</p>
+
+        <form onSubmit={onSubmit} className="auth-form">
+          <label>
+            H? và tên
+            <input
+              type="text"
+              placeholder="Nguy?n Van A"
+              value={form.fullName}
+              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Email
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            M?t kh?u
+            <input
+              type="password"
+              placeholder="T?i thi?u 6 ký t?"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+            />
+          </label>
+
+          {error && <p className="alert alert-error">{error}</p>}
+          <button type="submit">Ðang ký</button>
+        </form>
+
+        <p>
+          Ðã có tài kho?n? <Link to="/login">Ðang nh?p</Link>
+        </p>
+      </div>
     </div>
   );
 }

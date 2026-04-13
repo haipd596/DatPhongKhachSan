@@ -15,32 +15,41 @@ function ForgotPasswordPage() {
     setCode("");
     try {
       const res = await client.post("/auth/forgot-password", { email });
-      setMessage(res.data.message);
+      setMessage(res.data.message || "Ðã g?i mã d?t l?i m?t kh?u");
       setCode(res.data.debugResetCode || "");
     } catch (err) {
-      setError(err.response?.data?.message || "Khong gui duoc ma reset");
+      setError(err.response?.data?.message || "Không g?i du?c mã reset");
     }
   };
 
   return (
-    <div className="auth-container">
-      <h1>Quen mat khau</h1>
-      <form className="auth-form" onSubmit={onSubmit}>
-        <input
-          type="email"
-          placeholder="Nhap email tai khoan"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <button type="submit">Gui ma</button>
-      </form>
-      {message && <p className="success">{message}</p>}
-      {code && <p className="hint">Ma reset demo: {code}</p>}
-      {error && <p className="error">{error}</p>}
-      <p>
-        Da co ma? <Link to="/reset-password">Doi mat khau</Link>
-      </p>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <h1 className="auth-title">Khôi ph?c m?t kh?u</h1>
+        <p className="auth-sub">Nh?p email d? nh?n mã reset (môi tru?ng demo hi?n th? mã tr?c ti?p).</p>
+
+        <form className="auth-form" onSubmit={onSubmit}>
+          <label>
+            Email tài kho?n
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </label>
+          <button type="submit">G?i mã</button>
+        </form>
+
+        {message && <p className="alert alert-success">{message}</p>}
+        {code && <p className="alert alert-warn">Mã reset demo: {code}</p>}
+        {error && <p className="alert alert-error">{error}</p>}
+
+        <p>
+          Ðã có mã? <Link to="/reset-password">Ð?t l?i m?t kh?u</Link>
+        </p>
+      </div>
     </div>
   );
 }

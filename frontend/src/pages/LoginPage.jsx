@@ -15,43 +15,51 @@ function LoginPage() {
     try {
       const res = await client.post("/auth/login", form);
       login(res.data);
-      if (res.data.role === "MANAGER") {
-        navigate("/manager");
-      } else {
-        navigate("/");
-      }
+      navigate(res.data.role === "MANAGER" ? "/manager" : "/customer");
     } catch (err) {
-      setError(err.response?.data?.message || "Dang nhap that bai");
+      setError(err.response?.data?.message || "Ðang nh?p th?t b?i");
     }
   };
 
   return (
-    <div className="auth-container">
-      <h1>Dang nhap</h1>
-      <form onSubmit={onSubmit} className="auth-form">
-        <input
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Mat khau"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
-        {error && <p className="error">{error}</p>}
-        <button type="submit">Dang nhap</button>
-      </form>
-      <p>
-        Chua co tai khoan? <Link to="/register">Dang ky</Link>
-      </p>
-      <p>
-        Quen mat khau? <Link to="/forgot-password">Khoi phuc</Link>
-      </p>
+    <div className="auth-shell">
+      <div className="auth-card">
+        <h1 className="auth-title">Ðang nh?p h? th?ng</h1>
+        <p className="auth-sub">N?n t?ng d?t phòng khách s?n Rex Sài Gòn - phiên b?n d? án t?t nghi?p.</p>
+
+        <form onSubmit={onSubmit} className="auth-form">
+          <label>
+            Email
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            M?t kh?u
+            <input
+              type="password"
+              placeholder="Nh?p m?t kh?u"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+            />
+          </label>
+
+          {error && <p className="alert alert-error">{error}</p>}
+          <button type="submit">Ðang nh?p</button>
+        </form>
+
+        <p>
+          Chua có tài kho?n? <Link to="/register">Ðang ký ngay</Link>
+        </p>
+        <p>
+          Quên m?t kh?u? <Link to="/forgot-password">L?y mã khôi ph?c</Link>
+        </p>
+      </div>
     </div>
   );
 }
