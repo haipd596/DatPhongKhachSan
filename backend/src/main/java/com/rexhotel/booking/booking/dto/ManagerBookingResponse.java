@@ -4,8 +4,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public record BookingResponse(
+public record ManagerBookingResponse(
     Long id,
+    String customerName,
+    String customerEmail,
+    String vipLevel,
     String roomCode,
     String roomTypeName,
     LocalDate checkInDate,
@@ -13,6 +16,5 @@ public record BookingResponse(
     String status,
     BigDecimal totalAmount,
     BigDecimal refundAmount,
-    LocalDateTime holdExpiresAt,
     LocalDateTime createdAt
 ) {}

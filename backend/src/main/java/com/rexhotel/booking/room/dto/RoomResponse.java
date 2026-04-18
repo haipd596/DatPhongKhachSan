@@ -10,6 +10,6 @@ public record RoomResponse(
     Long roomTypeId,
     String roomTypeName,
     BigDecimal basePrice,
-    Integer maxGuests
-) {
-}
+    Integer maxGuests,
+    String imageUrl
+) {}

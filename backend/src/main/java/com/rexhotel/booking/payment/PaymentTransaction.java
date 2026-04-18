@@ -35,14 +35,13 @@ public class PaymentTransaction {
     @Column(nullable = false, length = 20)
     private PaymentStatus status;
 
-    @Column(nullable = false, length = 40)
+    @Column(nullable = false, length = 60)
     private String transactionCode;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public PaymentTransaction() {
-    }
+    public PaymentTransaction() {}
 
     public PaymentTransaction(Booking booking, BigDecimal amount, PaymentStatus status, String transactionCode) {
         this.booking = booking;
@@ -52,7 +51,11 @@ public class PaymentTransaction {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public Booking getBooking() { return booking; }
+    public BigDecimal getAmount() { return amount; }
+    public PaymentStatus getStatus() { return status; }
+    public void setStatus(PaymentStatus status) { this.status = status; }
+    public String getTransactionCode() { return transactionCode; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 }

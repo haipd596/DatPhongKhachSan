@@ -2,16 +2,25 @@ package com.rexhotel.booking.room.dto;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 
 public record RoomTypeRequest(
-    @NotBlank @Size(max = 80) String name,
-    @NotNull @DecimalMin("1") BigDecimal basePrice,
-    @NotNull @Min(1) Integer maxGuests,
-    @Size(max = 300) String description
-) {
-}
+    @NotBlank(message = "Ten loai phong khong duoc de trong")
+    String name,
+
+    @NotNull(message = "Gia co ban khong duoc de trong")
+    @Positive(message = "Gia co ban phai lon hon 0")
+    BigDecimal basePrice,
+
+    @NotNull(message = "So khach toi da khong duoc de trong")
+    @Min(value = 1, message = "So khach toi da phai it nhat 1")
+    Integer maxGuests,
+
+    String description,
+
+    // FEATURE6: imageUrl tuy chon
+    String imageUrl
+) {}

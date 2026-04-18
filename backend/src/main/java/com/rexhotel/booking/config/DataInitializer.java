@@ -109,7 +109,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private RoomType upsertRoomType(String name, BigDecimal basePrice, int maxGuests, String description) {
         return roomTypeRepository.findByNameIgnoreCase(name).orElseGet(() -> roomTypeRepository.save(
-            new RoomType(name, basePrice, maxGuests, description)
+            new RoomType(name, basePrice, maxGuests, description, null)
         ));
     }
 

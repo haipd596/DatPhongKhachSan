@@ -1,5 +1,6 @@
 package com.rexhotel.booking.room;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +20,12 @@ import com.rexhotel.booking.room.dto.RoomTypeResponse;
 @Service
 public class RoomService {
 
-    private static final Set<BookingStatus> BLOCKING_STATUSES = Set.of(BookingStatus.HOLD, BookingStatus.CONFIRMED);
+    private static final Set<BookingStatus> BLOCKING_STATUSES = Set.of(
+        BookingStatus.HOLD, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN
+    );
+    private static final Set<BookingStatus> ACTIVE_STATUSES = Set.of(
+        BookingStatus.HOLD, BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN
+    );
 
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
@@ -48,7 +54,8 @@ public class RoomService {
             request.name().trim(),
             request.basePrice(),
             request.maxGuests(),
-            request.description()
+            request.description(),
+            request.imageUrl()
         );
         roomTypeRepository.save(roomType);
         return toRoomTypeResponse(roomType);
@@ -61,12 +68,17 @@ public class RoomService {
         roomType.setBasePrice(request.basePrice());
         roomType.setMaxGuests(request.maxGuests());
         roomType.setDescription(request.description());
+        roomType.setImageUrl(request.imageUrl());
         roomTypeRepository.save(roomType);
         return toRoomTypeResponse(roomType);
     }
 
     @Transactional
     public void deleteRoomType(Long id) {
+        // BUG3: Kiem tra co phong nao dang su dung loai phong nay khong
+        if (roomRepository.existsByRoomTypeId(id)) {
+            throw new ApiException("Khong the xoa loai phong dang co phong su dung. Vui long xoa cac phong truoc.");
+        }
         roomTypeRepository.deleteById(id);
     }
 
@@ -98,15 +110,27 @@ public class RoomService {
 
     @Transactional
     public void deleteRoom(Long id) {
+        // BUG3: Kiem tra con booking active khong truoc khi xoa
+        if (bookingRepository.existsByRoomIdAndStatusIn(id, ACTIVE_STATUSES)) {
+            throw new ApiException("Khong the xoa phong dang co dat phong (HOLD/CONFIRMED/CHECKED_IN). Vui long xu ly cac booking truoc.");
+        }
         roomRepository.deleteById(id);
     }
 
-    public List<RoomResponse> getAvailableRooms(LocalDate checkInDate, LocalDate checkOutDate) {
-        validateDateRange(checkInDate, checkOutDate);
+    // FEATURE6: Tim phong kha dung voi filter nang cao
+    public List<RoomResponse> getAvailableRooms(LocalDate checkIn, LocalDate checkOut,
+                                                 Long roomTypeId, BigDecimal minPrice,
+                                                 BigDecimal maxPrice, Integer maxGuests) {
+        validateDateRange(checkIn, checkOut);
         return roomRepository.findByStatus(RoomStatus.AVAILABLE).stream()
-            .filter(room -> bookingRepository.countOverlapping(
-                room.getId(), BLOCKING_STATUSES, checkInDate, checkOutDate
-            ) == 0)
+            .filter(room -> {
+                RoomType rt = room.getRoomType();
+                if (roomTypeId != null && !rt.getId().equals(roomTypeId)) return false;
+                if (maxGuests != null && rt.getMaxGuests() < maxGuests) return false;
+                if (minPrice != null && rt.getBasePrice().compareTo(minPrice) < 0) return false;
+                if (maxPrice != null && rt.getBasePrice().compareTo(maxPrice) > 0) return false;
+                return bookingRepository.countOverlapping(room.getId(), BLOCKING_STATUSES, checkIn, checkOut) == 0;
+            })
             .map(this::toRoomResponse)
             .toList();
     }
@@ -138,7 +162,8 @@ public class RoomService {
             roomType.getName(),
             roomType.getBasePrice(),
             roomType.getMaxGuests(),
-            roomType.getDescription()
+            roomType.getDescription(),
+            roomType.getImageUrl()
         );
     }
 
@@ -152,7 +177,8 @@ public class RoomService {
             type.getId(),
             type.getName(),
             type.getBasePrice(),
-            type.getMaxGuests()
+            type.getMaxGuests(),
+            type.getImageUrl()
         );
     }
 
@@ -160,7 +186,7 @@ public class RoomService {
         try {
             return RoomStatus.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException ex) {
-            throw new ApiException("Trang thai phong khong hop le");
+            throw new ApiException("Trang thai phong khong hop le. Chap nhan: AVAILABLE, MAINTENANCE");
         }
     }
 }

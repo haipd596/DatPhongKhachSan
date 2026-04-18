@@ -27,3 +27,6 @@ app:
     from: noreply@rex.local
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  vnpay:
+    mock-secret: ${VNPAY_MOCK_SECRET:RexHotelVNPayMockSecretKey2026}
+    mock-return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment/result}
