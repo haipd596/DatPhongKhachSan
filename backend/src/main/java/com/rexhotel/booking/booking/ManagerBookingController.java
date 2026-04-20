@@ -2,6 +2,8 @@ package com.rexhotel.booking.booking;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.rexhotel.booking.booking.dto.BookingResponse;
 import com.rexhotel.booking.booking.dto.ManagerBookingResponse;
@@ -39,15 +43,16 @@ public class ManagerBookingController {
     }
 
     /**
-     * FEATURE8: Lay danh sach tat ca booking voi filter.
-     * GET /api/manager/bookings?status=CONFIRMED&email=abc&checkIn=2026-04-01&checkOut=2026-04-30
+     * DANG DUOC SUA BOI ANTIGRAVITY: Tich hop Pagination de chong OutOfMemory tren DB lon.
+     * GET /api/manager/bookings?status=CONFIRMED&email=abc&page=0&size=10
      */
     @GetMapping("/bookings")
-    public ResponseEntity<List<ManagerBookingResponse>> getAllBookings(
+    public ResponseEntity<Page<ManagerBookingResponse>> getAllBookings(
         @RequestParam(required = false) String status,
         @RequestParam(required = false) String email,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
+        Pageable pageable
     ) {
         BookingStatus statusEnum = null;
         if (status != null && !status.isBlank()) {
@@ -57,11 +62,9 @@ public class ManagerBookingController {
         }
         String emailFilter = (email != null && !email.isBlank()) ? email : null;
 
-        List<ManagerBookingResponse> result = bookingRepository
-            .findAllFiltered(statusEnum, emailFilter, checkIn, checkOut)
-            .stream()
-            .map(this::toManagerBookingResponse)
-            .toList();
+        Page<ManagerBookingResponse> result = bookingRepository
+            .findAllFiltered(statusEnum, emailFilter, checkIn, checkOut, pageable)
+            .map(this::toManagerBookingResponse);
         return ResponseEntity.ok(result);
     }
 
@@ -82,19 +85,39 @@ public class ManagerBookingController {
     }
 
     /**
-     * FEATURE8: Lay danh sach khach hang sap xep theo so booking.
+     * FEATURE8: Lay danh sach khach hang sap xep theo so booking (co phan trang).
      */
     @GetMapping("/customers")
-    public ResponseEntity<List<CustomerSummaryResponse>> getCustomers() {
-        List<CustomerSummaryResponse> result = userRepository
-            .findByRoleOrderByBookingCountDesc(UserRole.CUSTOMER)
-            .stream()
+    public ResponseEntity<Page<CustomerSummaryResponse>> getCustomers(Pageable pageable) {
+        Page<CustomerSummaryResponse> result = userRepository
+            .findByRoleOrderByBookingCountDesc(UserRole.CUSTOMER, pageable)
             .map(u -> new CustomerSummaryResponse(
                 u.getId(), u.getFullName(), u.getEmail(),
                 u.getVipLevel().name(), u.getBookingCount()
-            ))
-            .toList();
+            ));
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * TINH NANG DAT DIEM CAO (BONUS): Thong ke phan tich Doanh Thu cho Giam doc
+     * Lay tong doanh thu, so luong booking trong nam.
+     */
+    @GetMapping("/dashboard/revenue")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueAnalytics(@RequestParam(name = "year", defaultValue = "2026") int year) {
+        List<Object[]> revenueData = bookingRepository.revenueByMonth(
+            List.of(BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT),
+            year
+        );
+        
+        List<Map<String, Object>> response = revenueData.stream()
+            .map(row -> Map.of(
+                "month", row[0],
+                "totalRevenue", row[1],
+                "bookingCount", row[2]
+            ))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
     }
 
     private ManagerBookingResponse toManagerBookingResponse(Booking b) {

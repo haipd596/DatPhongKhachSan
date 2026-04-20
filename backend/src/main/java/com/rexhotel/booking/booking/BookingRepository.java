@@ -71,11 +71,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
           and (:checkOut is null or b.checkOutDate <= :checkOut)
         order by b.createdAt desc
     """)
-    List<Booking> findAllFiltered(
+    org.springframework.data.domain.Page<Booking> findAllFiltered(
         @Param("status") BookingStatus status,
         @Param("email") String email,
         @Param("checkIn") LocalDate checkIn,
-        @Param("checkOut") LocalDate checkOut
+        @Param("checkOut") LocalDate checkOut,
+        org.springframework.data.domain.Pageable pageable
     );
 
     // FEATURE4: Doanh thu theo thang

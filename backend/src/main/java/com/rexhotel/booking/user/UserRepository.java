@@ -9,6 +9,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    // FEATURE8: Lay danh sach khach hang theo thu tu booking nhieu nhat
-    List<User> findByRoleOrderByBookingCountDesc(UserRole role);
+    // FEATURE8: Lay danh sach khach hang theo thu tu booking nhieu nhat ho tro phan trang
+    org.springframework.data.domain.Page<User> findByRoleOrderByBookingCountDesc(UserRole role, org.springframework.data.domain.Pageable pageable);
 }

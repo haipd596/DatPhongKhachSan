@@ -1,67 +1,80 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import client from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import client from "../api/client";
 
-function LoginPage() {
+export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
+  
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
-      const res = await client.post("/auth/login", form);
+      const res = await client.post("/auth/login", formData);
       login(res.data);
-      navigate(res.data.role === "MANAGER" ? "/manager" : "/customer");
+      navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "�ang nh?p th?t b?i");
+      setError(err.response?.data?.message || "Đăng nhập thất bại");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <h1 className="auth-title">�ang nh?p h? th?ng</h1>
-        <p className="auth-sub">N?n t?ng d?t ph�ng kh�ch s?n Rex S�i G�n - phi�n b?n d? �n t?t nghi?p.</p>
+    <>
+      <h2 className="auth-title playfair-text">Chào Mừng Trở Lại</h2>
+      <p className="auth-sub">
+        Đăng nhập để vào thế giới đặc quyền của bạn
+      </p>
 
-        <form onSubmit={onSubmit} className="auth-form">
-          <label>
-            Email
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
+      {error && <div className="alert alert-error">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        {error}
+      </div>}
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Email / Định danh</label>
+          <input
+            type="email"
+            className="form-control"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+            placeholder="contact@rexhotel.com"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Mật khẩu</span>
+            <Link to="/forgot-password" style={{ textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}>Quên mật khẩu?</Link>
           </label>
-          <label>
-            M?t kh?u
-            <input
-              type="password"
-              placeholder="Nh?p m?t kh?u"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </label>
+          <input
+            type="password"
+            className="form-control"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+            placeholder="••••••••"
+          />
+        </div>
 
-          {error && <p className="alert alert-error">{error}</p>}
-          <button type="submit">�ang nh?p</button>
-        </form>
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 20 }}>
+          {loading ? "Đang xử lý phân quyền..." : "Đăng Nhập Quản Trị"}
+        </button>
+      </form>
 
-        <p>
-          Chua c� t�i kho?n? <Link to="/register">�ang k� ngay</Link>
-        </p>
-        <p>
-          Qu�n m?t kh?u? <Link to="/forgot-password">L?y m� kh�i ph?c</Link>
-        </p>
+      <div className="center-text" style={{ marginTop: 32, fontSize: '0.95rem' }}>
+        <span className="text-muted">Lần đầu đến với RexHotel? </span>
+        <Link to="/register" style={{ fontWeight: 600 }}>Tạo tài khoản VIP</Link>
       </div>
-    </div>
+    </>
   );
 }
-
-export default LoginPage;

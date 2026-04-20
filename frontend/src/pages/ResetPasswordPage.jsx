@@ -1,65 +1,82 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import client from "../api/client";
 
-function ResetPasswordPage() {
+export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ code: "", newPassword: "" });
-  const [message, setMessage] = useState("");
+  const [searchParams] = useSearchParams();
+  
+  const [formData, setFormData] = useState({ 
+    code: "", 
+    newPassword: "" 
+  });
+  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
-    setError("");
+    setMsg(""); setError("");
+    setLoading(true);
     try {
-      const res = await client.post("/auth/reset-password", form);
-      setMessage(res.data.message || "�?i m?t kh?u th�nh c�ng");
-      setTimeout(() => navigate("/login"), 1200);
+      await client.post("/auth/reset-password", {
+        code: formData.code.trim(),
+        newPassword: formData.newPassword
+      });
+      setMsg("Đổi mật khẩu thành công! Chuyển hướng...");
+      setTimeout(() => navigate(`/login`), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng d?i du?c m?t kh?u");
+      setError(err.response?.data?.message || "Lỗi hệ thống");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <h1 className="auth-title">�?t l?i m?t kh?u</h1>
-        <p className="auth-sub">Nh?p m� reset v� m?t kh?u m?i (6-72 k� t?).</p>
+    <>
+      <h2 className="page-title center-text">Đặt Lại Mật Khẩu</h2>
+      <p className="text-muted center-text" style={{ marginBottom: 24 }}>
+        Nhập mã xác nhận (6 số) đã được gửi đến hộp thư: <strong>{searchParams.get("email") || "của bạn"}</strong>
+      </p>
 
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
-            M� reset
-            <input
-              type="text"
-              placeholder="ABC123"
-              value={form.code}
-              onChange={(e) => setForm({ ...form, code: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            M?t kh?u m?i
-            <input
-              type="password"
-              placeholder="Nh?p m?t kh?u m?i"
-              value={form.newPassword}
-              onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
-              required
-            />
-          </label>
-          <button type="submit">C?p nh?t m?t kh?u</button>
-        </form>
+      {error && <div className="alert alert-error">{error}</div>}
+      {msg && <div className="alert alert-success">{msg}</div>}
 
-        {message && <p className="alert alert-success">{message}</p>}
-        {error && <p className="alert alert-error">{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Mã xác nhận OTP</label>
+          <input
+            type="text"
+            className="form-control"
+            value={formData.code}
+            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+            required
+            maxLength={6}
+            placeholder="Ví dụ: 123456"
+          />
+        </div>
 
-        <p>
-          <Link to="/login">Quay v? dang nh?p</Link>
-        </p>
+        <div className="form-group">
+          <label className="form-label">Mật khẩu mới</label>
+          <input
+            type="password"
+            className="form-control"
+            value={formData.newPassword}
+            onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+            required
+            minLength={6}
+            placeholder="••••••••"
+          />
+        </div>
+        
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 16 }}>
+          {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+        </button>
+      </form>
+
+      <div className="center-text" style={{ marginTop: 24 }}>
+        <Link to="/login">← Về trang Đăng nhập</Link>
       </div>
-    </div>
+    </>
   );
 }
-
-export default ResetPasswordPage;

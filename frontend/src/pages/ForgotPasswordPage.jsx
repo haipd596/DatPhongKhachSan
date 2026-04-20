@@ -1,57 +1,64 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import client from "../api/client";
 
-function ForgotPasswordPage() {
+export default function ForgotPasswordPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
-    setError("");
-    setCode("");
+    setMsg(""); setError("");
+    setLoading(true);
     try {
       const res = await client.post("/auth/forgot-password", { email });
-      setMessage(res.data.message || "�� g?i m� d?t l?i m?t kh?u");
-      setCode(res.data.debugResetCode || "");
+      setMsg(res.data.message || "Đã gửi mã xác nhận. Vui lòng kiểm tra email.");
+      setTimeout(() => navigate(`/reset-password?email=${email}`), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Kh�ng g?i du?c m� reset");
+      if (err.response?.status === 429) {
+        setError("Bạn thao tác quá nhanh. Vui lòng thử lại sau 1 phút.");
+      } else {
+        setError(err.response?.data?.message || "Lỗi hệ thống");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <h1 className="auth-title">Kh�i ph?c m?t kh?u</h1>
-        <p className="auth-sub">Nh?p email d? nh?n m� reset (m�i tru?ng demo hi?n th? m� tr?c ti?p).</p>
+    <>
+      <h2 className="page-title center-text">Quên Mật Khẩu</h2>
+      <p className="text-muted center-text" style={{ marginBottom: 24 }}>
+        Nhập email tài khoản để nhận mã khôi phục
+      </p>
 
-        <form className="auth-form" onSubmit={onSubmit}>
-          <label>
-            Email t�i kho?n
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <button type="submit">G?i m�</button>
-        </form>
+      {error && <div className="alert alert-error">{error}</div>}
+      {msg && <div className="alert alert-success">{msg}</div>}
 
-        {message && <p className="alert alert-success">{message}</p>}
-        {code && <p className="alert alert-warn">M� reset demo: {code}</p>}
-        {error && <p className="alert alert-error">{error}</p>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Địa chỉ Email</label>
+          <input
+            type="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoCapitalize="none"
+          />
+        </div>
+        
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 16 }}>
+          {loading ? "Đang gửi email..." : "Gửi mã Reset Password"}
+        </button>
+      </form>
 
-        <p>
-          �� c� m�? <Link to="/reset-password">�?t l?i m?t kh?u</Link>
-        </p>
+      <div className="center-text" style={{ marginTop: 24 }}>
+        <Link to="/login">← Quay lại Đăng nhập</Link>
       </div>
-    </div>
+    </>
   );
 }
-
-export default ForgotPasswordPage;

@@ -1,74 +1,90 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import client from "../api/client";
 import { useAuth } from "../auth/AuthContext";
+import client from "../api/client";
 
-function RegisterPage() {
+export default function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "", fullName: "" });
+  
+  const [formData, setFormData] = useState({ email: "", fullName: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     try {
-      const res = await client.post("/auth/register", form);
+      const res = await client.post("/auth/register", formData);
       login(res.data);
-      navigate("/customer");
+      navigate("/");
     } catch (err) {
-      setError(err.response?.data?.message || "�ang k� th?t b?i");
+      setError(err.response?.data?.message || "Đăng ký thất bại, email có thể đã tồn tại");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        <h1 className="auth-title">�ang k� t�i kho?n kh�ch h�ng</h1>
-        <p className="auth-sub">T?o t�i kho?n d? d?t ph�ng, theo d�i VIP v� t?i phi?u x�c nh?n PDF.</p>
+    <>
+      <h2 className="auth-title playfair-text">Đặc Quyền Hội Viên</h2>
+      <p className="auth-sub">
+        Thiết lập định danh để trải nghiệm dịch vụ đẳng cấp từ RexHotel
+      </p>
 
-        <form onSubmit={onSubmit} className="auth-form">
-          <label>
-            H? v� t�n
-            <input
-              type="text"
-              placeholder="Nguy?n Van A"
-              value={form.fullName}
-              onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Email
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            M?t kh?u
-            <input
-              type="password"
-              placeholder="T?i thi?u 6 k� t?"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
-          </label>
+      {error && <div className="alert alert-error">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        {error}
+      </div>}
 
-          {error && <p className="alert alert-error">{error}</p>}
-          <button type="submit">�ang k�</button>
-        </form>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Họ và tên</label>
+          <input
+            type="text"
+            className="form-control"
+            value={formData.fullName}
+            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            required
+            placeholder="Tony Stark"
+          />
+        </div>
 
-        <p>
-          �� c� t�i kho?n? <Link to="/login">�ang nh?p</Link>
-        </p>
+        <div className="form-group">
+          <label className="form-label">Email / Định danh điện tử</label>
+          <input
+            type="email"
+            className="form-control"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+            placeholder="contact@rexhotel.com"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Khóa bảo mật</label>
+          <input
+            type="password"
+            className="form-control"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+            placeholder="Tối thiểu 6 ký tự"
+            minLength={6}
+          />
+        </div>
+
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 20 }}>
+          {loading ? "Đang khởi tạo đặc quyền..." : "Mở Khóa Đặc Quyền"}
+        </button>
+      </form>
+
+      <div className="center-text" style={{ marginTop: 32, fontSize: '0.95rem' }}>
+        <span className="text-muted">Đã sở hữu định danh? </span>
+        <Link to="/login" style={{ fontWeight: 600 }}>Cổng đăng nhập</Link>
       </div>
-    </div>
+    </>
   );
 }
-
-export default RegisterPage;

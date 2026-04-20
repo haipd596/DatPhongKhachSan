@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import client from "../api/client";
 import { useAuth } from "../auth/AuthContext";
 import SupportChatbot from "../components/SupportChatbot";
@@ -11,10 +11,10 @@ const BOOKING_STATUS_TEXT = {
 };
 
 const STATUS_COLORS = {
-  HOLD: "#ea580c",
-  CONFIRMED: "#059669",
-  CANCELLED: "#dc2626",
-  EXPIRED: "#9333ea"
+  HOLD: "#f59e0b",
+  CONFIRMED: "#10b981",
+  CANCELLED: "#ef4444",
+  EXPIRED: "#8b5cf6"
 };
 
 function formatCurrency(value) {
@@ -32,7 +32,7 @@ function formatDateTime(value) {
 function holdRemaining(holdExpiresAt) {
   if (!holdExpiresAt) return "-";
   const diffMs = new Date(holdExpiresAt).getTime() - Date.now();
-  if (diffMs <= 0) return "Đã hết";
+  if (diffMs <= 0) return "Đã hết hạn";
   const min = Math.floor(diffMs / 60000);
   const sec = Math.floor((diffMs % 60000) / 1000);
   return `${min}m ${sec}s`;
@@ -48,16 +48,16 @@ function BarChart({ data }) {
     <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Biểu đồ cột trạng thái booking">
       {data.map((item, index) => {
         const ratio = item.value / max;
-        const h = ratio * 110;
+        const h = Math.max(ratio * 110, 2);
         const x = index * barW + 18;
         const y = 130 - h;
         return (
           <g key={item.label}>
-            <rect x={x} y={y} width={barW - 34} height={h} fill={item.color} rx="6" />
-            <text x={x + (barW - 34) / 2} y="146" textAnchor="middle" fontSize="10" fill="#475569">
+            <rect x={x} y={y} width={barW - 34} height={h} fill={item.color} rx="4" />
+            <text x={x + (barW - 34) / 2} y="146" textAnchor="middle" fontSize="10" fill="#6b7280" fontWeight="600">
               {item.label}
             </text>
-            <text x={x + (barW - 34) / 2} y={y - 4} textAnchor="middle" fontSize="10" fill="#0f172a">
+            <text x={x + (barW - 34) / 2} y={y - 6} textAnchor="middle" fontSize="10" fill="#1f2937" fontWeight="bold">
               {item.value}
             </text>
           </g>
@@ -83,16 +83,16 @@ function LineChart({ data }) {
 
   return (
     <svg className="chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Biểu đồ xu hướng booking theo tháng">
-      <line x1="30" y1="130" x2="340" y2="130" stroke="#cbd5e1" strokeWidth="1" />
-      <line x1="30" y1="20" x2="30" y2="130" stroke="#cbd5e1" strokeWidth="1" />
-      <polyline points={points} fill="none" stroke="#0f7d67" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+      <line x1="30" y1="130" x2="340" y2="130" stroke="#e5e7eb" strokeWidth="1" />
+      <line x1="30" y1="20" x2="30" y2="130" stroke="#e5e7eb" strokeWidth="1" />
+      <polyline points={points} fill="none" stroke="#d4af37" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
       {data.map((item, idx) => {
         const x = 30 + idx * stepX;
         const y = 130 - (item.value / max) * 100;
         return (
           <g key={item.label}>
-            <circle cx={x} cy={y} r="4" fill="#0f7d67" />
-            <text x={x} y="145" textAnchor="middle" fontSize="10" fill="#475569">
+            <circle cx={x} cy={y} r="5" fill="#14b8a6" stroke="#fff" strokeWidth="2" />
+            <text x={x} y="146" textAnchor="middle" fontSize="10" fill="#6b7280" fontWeight="600">
               {item.label}
             </text>
           </g>
@@ -116,6 +116,7 @@ function HomePage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loadingKey, setLoadingKey] = useState("");
+  const [activeTab, setActiveTab] = useState("tong-quan");
 
   useEffect(() => {
     const now = new Date();
@@ -189,9 +190,9 @@ function HomePage() {
   const bookingStatusChart = useMemo(
     () => [
       { label: "HOLD", value: statusStats.HOLD, color: STATUS_COLORS.HOLD },
-      { label: "CONF", value: statusStats.CONFIRMED, color: STATUS_COLORS.CONFIRMED },
-      { label: "CANCEL", value: statusStats.CANCELLED, color: STATUS_COLORS.CANCELLED },
-      { label: "EXPIRE", value: statusStats.EXPIRED, color: STATUS_COLORS.EXPIRED }
+      { label: "CONFIRMED", value: statusStats.CONFIRMED, color: STATUS_COLORS.CONFIRMED },
+      { label: "CANCELLED", value: statusStats.CANCELLED, color: STATUS_COLORS.CANCELLED },
+      { label: "EXPIRED", value: statusStats.EXPIRED, color: STATUS_COLORS.EXPIRED }
     ],
     [statusStats]
   );
@@ -233,7 +234,7 @@ function HomePage() {
       ]);
       setRooms(roomRes.data);
       setSummary(summaryRes.data);
-      setMessage(`Đã cập nhật dữ liệu phòng trống từ ${checkIn} đến ${checkOut}.`);
+      setMessage(`Đã cập nhật biểu đồ phòng với thông số mới.`);
     } catch (err) {
       setError(err.response?.data?.message || "Không tìm được phòng trống");
     }
@@ -243,7 +244,7 @@ function HomePage() {
     setError("");
     setMessage("");
     if (!checkIn || !checkOut) {
-      setError("Vui lòng chọn ngày nhận và ngày trả phòng trước khi giữ phòng.");
+      setError("Thiết lập khoảng thời gian trước khi yêu cầu giữ phòng.");
       return;
     }
 
@@ -254,10 +255,10 @@ function HomePage() {
         checkInDate: checkIn,
         checkOutDate: checkOut
       });
-      setMessage(`Giữ phòng thành công cho booking #${res.data.id}, hạn giữ đến ${formatDateTime(res.data.holdExpiresAt)}.`);
+      setMessage(`Thành công thiết lập yêu cầu giữ phòng [Mã: #${res.data.id}]. Hạn chót: ${formatDateTime(res.data.holdExpiresAt)}.`);
       await refreshBookingsAndVip();
     } catch (err) {
-      setError(err.response?.data?.message || "Giữ phòng thất bại");
+      setError(err.response?.data?.message || "Yêu cầu thất bại do tình trạng phòng kẹt");
     } finally {
       setLoadingKey("");
     }
@@ -269,7 +270,7 @@ function HomePage() {
     setLoadingKey(`pay-${bookingId}`);
     try {
       await client.post("/payments/mock-success", { bookingId });
-      setMessage(`Thanh toán mô phỏng thành công cho booking #${bookingId}.`);
+      setMessage(`Xác thực tài khoản thành công cho lộ trình #${bookingId}.`);
       await refreshBookingsAndVip();
     } catch (err) {
       setError(err.response?.data?.message || "Thanh toán thất bại");
@@ -284,7 +285,7 @@ function HomePage() {
     setLoadingKey(`cancel-${bookingId}`);
     try {
       await client.post(`/bookings/${bookingId}/cancel`);
-      setMessage(`Đã hủy booking #${bookingId}.`);
+      setMessage(`Đã huy bỏ lộ trình #${bookingId}.`);
       await refreshBookingsAndVip();
     } catch (err) {
       setError(err.response?.data?.message || "Hủy booking thất bại");
@@ -309,7 +310,7 @@ function HomePage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setError(err.response?.data?.message || "Không tải được PDF");
+      setError(err.response?.data?.message || "Trích xuất tài liệu thất bại");
     } finally {
       setLoadingKey("");
     }
@@ -324,172 +325,204 @@ function HomePage() {
       setReviewForm({ rating: 5, comment: "" });
       const reviewRes = await client.get("/reviews/hotel");
       setReviews(reviewRes.data);
-      setMessage("Đã gửi đánh giá dịch vụ thành công.");
+      setMessage("Tri ân phản hồi của Quý hội viên.");
     } catch (err) {
-      setError(err.response?.data?.message || "Không gửi được đánh giá");
+      setError(err.response?.data?.message || "Đánh giá chưa hội đủ điều kiện (Cần checkout)");
     }
   };
+
+  const menu = [
+    { id: 'tong-quan', label: 'Dashboard Hội Viên', icon: <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/> },
+    { id: 'tim-phong', label: 'Đặc Quyền Cư Trú', icon: <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/> },
+    { id: 'booking', label: 'Hồ Sơ Đặt Chỗ', icon: <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/> },
+    { id: 'danh-gia', label: 'Chia Sẻ Cảm Nhận', icon: <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/> }
+  ];
 
   return (
     <div className="page-shell">
       <header className="topbar no-print">
-        <div>
-          <h1 className="brand-title">Rex Hotel Booking - Trung tâm khách hàng</h1>
-          <p className="brand-sub">Xin chào {user.fullName} ({user.email}) - vai trò: {user.role}</p>
+        <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+            <path d="M2.25 18a.75.75 0 0 0 0 1.5c5.4 0 10.6 0 19.5 0a.75.75 0 0 0 0-1.5H2.25Zm0-2.25v-8.5a.75.75 0 0 1 1.25-.56l4.28 3.86 3.49-7.31a.75.75 0 0 1 1.35 0l3.49 7.31 4.28-3.86a.75.75 0 0 1 1.25.56v8.5H2.25Z" />
+          </svg>
+          <div>
+            <h1 className="brand-title">RexHotel</h1>
+            <p className="brand-sub">Khu vực hội viên • {user.fullName}</p>
+          </div>
         </div>
         <div className="topbar-actions">
-          <button type="button" className="btn-outline" onClick={loadDefaultData}>Làm mới dữ liệu</button>
-          <button type="button" className="btn-outline" onClick={() => window.print()}>In báo cáo PDF</button>
-          <button type="button" onClick={logout}>Đăng xuất</button>
+          <button type="button" className="btn btn-outline" onClick={loadDefaultData}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Tải Lại
+          </button>
+          <button type="button" className="btn btn-outline" onClick={() => window.print()}>
+            Xuất Báo Cáo
+          </button>
+          <button type="button" className="btn" onClick={logout}>Đăng xuất</button>
         </div>
       </header>
 
-      <section id="tong-quan" className="hero-panel">
-        <h2 className="hero-title">Không gian điều phối lưu trú cá nhân</h2>
-        <p className="hero-sub">Theo dõi trạng thái booking, khả năng đặt phòng và trải nghiệm dịch vụ theo thời gian thực trên một giao diện thống nhất.</p>
+      {/* Cập nhật Hero Section Premium */}
+      <section className="hero-panel" style={{ borderRadius: '0 0 var(--radius-lg) var(--radius-lg)' }}>
+        <h2 className="hero-title">Định Hình Không Gian Của Sự Hoàn Mỹ</h2>
+        <p className="hero-sub" style={{ opacity: 0.9 }}>
+          Chào mừng hội viên hạng <span className="vip-badge">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</span><br/>
+          Trải nghiệm đẳng cấp cùng ưu đãi chiết khấu {Math.round(Number(vipInfo?.discountRate || 0) * 100)}% trọn đời.
+        </p>
         <div className="hero-grid">
-          <div className="hero-chip"><div className="hero-chip-label">Hạng thành viên</div><div className="hero-chip-value">{vipInfo?.vipLevel || user.vipLevel || "NORMAL"}</div></div>
-          <div className="hero-chip"><div className="hero-chip-label">Chiết khấu</div><div className="hero-chip-value">{Math.round(Number(vipInfo?.discountRate || 0) * 100)}%</div></div>
-          <div className="hero-chip"><div className="hero-chip-label">Booking xác nhận</div><div className="hero-chip-value">{statusStats.CONFIRMED}</div></div>
-          <div className="hero-chip"><div className="hero-chip-label">Điểm đánh giá TB</div><div className="hero-chip-value">{avgRating.toFixed(1)}/5</div></div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Lượt lưu trú tích luỹ</div>
+            <div className="hero-chip-value">{user.bookingCount || statusStats.CONFIRMED}</div>
+          </div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Đang chờ xác minh</div>
+            <div className="hero-chip-value">{statusStats.HOLD}</div>
+          </div>
+          <div className="hero-chip">
+            <div className="hero-chip-label">Chấm điểm Review TB</div>
+            <div className="hero-chip-value">{avgRating.toFixed(1)}/5</div>
+          </div>
         </div>
       </section>
 
-      {error && <p className="alert alert-error">{error}</p>}
-      {message && <p className="alert alert-success">{message}</p>}
-
       <div className="workspace">
         <aside className="sidebar no-print">
-          <h3>Điều hướng nhanh</h3>
+          <h3>Menu Hội Viên</h3>
           <div className="side-list">
-            <a className="side-link" href="#tong-quan">Tổng quan</a>
-            <a className="side-link" href="#tim-phong">Phân tích phòng trống</a>
-            <a className="side-link" href="#phong-trong">Danh sách phòng</a>
-            <a className="side-link" href="#booking">Lịch sử booking</a>
-            <a className="side-link" href="#danh-gia">Đánh giá dịch vụ</a>
-            <a className="side-link" href="#ho-tro">Hỗ trợ và bản đồ</a>
-            <a className="side-link" href="#bao-cao">Bản in báo cáo</a>
+            {menu.map(m => (
+              <a key={m.id} className={`side-link ${activeTab === m.id ? 'active' : ''}`} href={`#${m.id}`} onClick={() => setActiveTab(m.id)}>
+                <svg viewBox="0 0 24 24">{m.icon}</svg>
+                {m.label}
+              </a>
+            ))}
           </div>
         </aside>
 
         <main className="content-stack">
-          <section className="split-layout">
+          {error && <div className="alert alert-error">
+             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+             {error}
+          </div>}
+          {message && <div className="alert alert-success">
+             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
+             {message}
+          </div>}
+
+          <section id="tong-quan" className="split-layout">
             <div className="stack">
               <article className="card">
-                <h2>Phân tích trạng thái booking</h2>
+                <h2>Trạng Thái Hiện Tại</h2>
                 <div className="metric-grid">
-                  <div className="metric-tile"><div className="metric-label">Đang giữ</div><div className="metric-value">{statusStats.HOLD}</div></div>
-                  <div className="metric-tile"><div className="metric-label">Đã xác nhận</div><div className="metric-value">{statusStats.CONFIRMED}</div></div>
-                  <div className="metric-tile"><div className="metric-label">Đã hủy</div><div className="metric-value">{statusStats.CANCELLED}</div></div>
-                  <div className="metric-tile"><div className="metric-label">Hết hạn</div><div className="metric-value">{statusStats.EXPIRED}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Đang Giữ</div><div className="metric-value">{statusStats.HOLD}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Xác Nhận</div><div className="metric-value">{statusStats.CONFIRMED}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Thất Bại/Hủy</div><div className="metric-value">{statusStats.CANCELLED}</div></div>
+                  <div className="metric-tile"><div className="metric-label">Quá Hạn</div><div className="metric-value">{statusStats.EXPIRED}</div></div>
                 </div>
 
-                <div className="chart-grid" style={{ marginTop: 12 }}>
+                <div className="chart-grid" style={{ marginTop: 24 }}>
                   <div className="chart-box">
-                    <p className="chart-title">Biểu đồ cột theo trạng thái</p>
+                    <p className="chart-title">Tỷ Trọng Hồ Sơ</p>
                     <BarChart data={bookingStatusChart} />
-                    <div className="chart-legend">
-                      {bookingStatusChart.map((item) => (
-                        <span key={item.label}><span className="legend-dot" style={{ background: item.color }} />{item.label}</span>
-                      ))}
-                    </div>
                   </div>
                   <div className="chart-box">
-                    <p className="chart-title">Xu hướng booking 6 tháng gần nhất</p>
+                    <p className="chart-title">Nhu Cầu 6 Tháng Của Tôi</p>
                     <LineChart data={monthlyBookingTrend} />
                   </div>
                 </div>
               </article>
 
               <article id="tim-phong" className="card">
-                <h2>Phân tích phòng trống theo thời gian</h2>
+                <h2>Bộ Phân Tích Hiện Trạng Phòng</h2>
                 <form className="grid" onSubmit={searchAvailable}>
                   <div className="form-row">
-                    <label>Ngày nhận phòng<input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
-                    <label>Ngày trả phòng<input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
+                    <label>Bắt đầu từ<input type="date" className="form-control" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
+                    <label>Kết thúc vào<input type="date" className="form-control" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
                   </div>
-                  <div className="form-actions"><button type="submit">Phân tích phòng trống</button></div>
+                  <div className="form-actions"><button type="submit" className="btn">Thiết Lập Bộ Đếm</button></div>
                 </form>
                 {!!summary.length && (
-                  <>
+                  <div style={{ marginTop: 24 }}>
                     <div className="progress-row">
-                      <div className="progress-head"><span>Tỷ lệ phòng trống toàn hệ thống</span><strong>{availabilityRate}%</strong></div>
+                      <div className="progress-head"><span>Mức Độ Hoạt Động Của Hệ Thống</span><strong>{availabilityRate}% Sẵn Sàng</strong></div>
                       <div className="progress-track"><div className="progress-fill" style={{ width: `${availabilityRate}%` }} /></div>
                     </div>
                     <div className="table-wrap">
                       <table>
-                        <thead><tr><th>Loại phòng</th><th>Tổng phòng</th><th>Đang giữ/đặt</th><th>Còn trống</th></tr></thead>
-                        <tbody>{summary.map((item) => <tr key={item.roomTypeId}><td>{item.roomTypeName}</td><td>{item.totalRooms}</td><td>{item.reservedRooms}</td><td>{item.availableRooms}</td></tr>)}</tbody>
+                        <thead><tr><th>Hạng Phòng</th><th>Quỹ Phòng</th><th>Đang Giao Dịch</th><th>Có Thể Chọn</th></tr></thead>
+                        <tbody>{summary.map((item) => <tr key={item.roomTypeId}><td>{item.roomTypeName}</td><td>{item.totalRooms}</td><td><span style={{color: 'var(--danger)', fontWeight: 'bold'}}>{item.reservedRooms}</span></td><td><span style={{color: 'var(--success)', fontWeight: 'bold'}}>{item.availableRooms}</span></td></tr>)}</tbody>
                       </table>
                     </div>
-                  </>
+                  </div>
                 )}
               </article>
             </div>
 
             <div className="stack">
-              <article className="card">
-                <h2>Lịch lưu trú gần nhất</h2>
-                <div className="timeline">
-                  {nearestBookings.map((item) => (
-                    <div className="timeline-item" key={item.id}>
-                      <p className="timeline-title">Booking #{item.id} - {item.roomCode}</p>
-                      <p className="timeline-meta">{formatDate(item.checkInDate)} đến {formatDate(item.checkOutDate)} | {BOOKING_STATUS_TEXT[item.status]}</p>
-                    </div>
-                  ))}
-                  {!nearestBookings.length && <p className="card-sub">Chưa có booking nào.</p>}
-                </div>
-              </article>
-
-              <article className="card">
-                <h2>Danh mục loại phòng</h2>
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>Loại phòng</th><th>Giá cơ bản</th><th>Sức chứa</th><th>Mô tả</th></tr></thead>
-                    <tbody>{roomTypes.map((type) => <tr key={type.id}><td>{type.name}</td><td>{formatCurrency(type.basePrice)}</td><td>{type.maxGuests} khách</td><td>{type.description || "-"}</td></tr>)}</tbody>
-                  </table>
-                </div>
-              </article>
-            </div>
-          </section>
-
-          <section id="phong-trong" className="card">
-            <h2>Danh sách phòng sẵn sàng đặt</h2>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Mã phòng</th><th>Loại phòng</th><th>Tầng</th><th>Giá/đêm</th><th>Sức chứa</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-                <tbody>
-                  {rooms.map((room) => (
-                    <tr key={room.id}>
-                      <td>{room.code}</td><td>{room.roomTypeName}</td><td>{room.floorNumber}</td><td>{formatCurrency(room.basePrice)}</td><td>{room.maxGuests} khách</td>
-                      <td><span className={`badge badge-${room.status}`}>{room.status}</span></td>
-                      <td><button type="button" onClick={() => holdRoom(room.id)} disabled={loadingKey === `hold-${room.id}`}>{loadingKey === `hold-${room.id}` ? "Đang giữ..." : "Giữ phòng"}</button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+               <article className="card">
+                 <h2>Khảo Sát Danh Mục Lưu Trú</h2>
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Khu Vực Phân Tầng/Mã</th><th>Hạng</th><th>Giá Niêm Yết / Đêm</th><th>Hành Động</th></tr></thead>
+                      <tbody>
+                        {rooms.map((room) => (
+                          <tr key={room.id}>
+                            <td>
+                              <div style={{display: 'flex', flexDirection: 'column'}}>
+                                <span style={{fontWeight: 700, color: 'var(--primary)', fontSize: '1.1rem'}}>{room.code}</span>
+                                <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Tại tầng {room.floorNumber}</span>
+                              </div>
+                            </td>
+                            <td>
+                               <div>{room.roomTypeName}</div>
+                               <span className={`badge badge-${room.status}`}>{room.status}</span>
+                            </td>
+                            <td>
+                               <div style={{ color: 'var(--gold-dark)', fontWeight: 'bold', fontSize: '1.05rem'}}>{formatCurrency(room.basePrice)}</div>
+                               <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Sức chứa: {room.maxGuests} khách</div>
+                            </td>
+                            <td>
+                               <button type="button" className="btn btn-outline" style={{padding: '8px 16px', fontSize: '0.8rem'}} onClick={() => holdRoom(room.id)} disabled={loadingKey === `hold-${room.id}` || room.status !== 'AVAILABLE'}>
+                                  {loadingKey === `hold-${room.id}` ? "Đang xử lý..." : "Chiếm Chỗ"}
+                               </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+               </article>
             </div>
           </section>
 
           <section id="booking" className="card">
-            <h2>Lịch sử booking của tôi</h2>
+            <h2>Hồ Sơ Đặt Chỗ Cá Nhân</h2>
             <div className="table-wrap">
               <table>
-                <thead><tr><th>Mã</th><th>Phòng</th><th>Ngày ở</th><th>Trạng thái</th><th>Tổng tiền</th><th>Hạn giữ còn lại</th><th>Thao tác</th></tr></thead>
+                <thead><tr><th>Mã GD</th><th>Phân Loại</th><th>Thời Gian Yêu Cầu</th><th>Hiện Trạng</th><th>Giá Trị</th><th>Đồng Hồ Đếm Ngược</th><th>Tiện Ích</th></tr></thead>
                 <tbody>
                   {bookings.map((booking) => (
                     <tr key={booking.id}>
-                      <td>#{booking.id}</td>
-                      <td>{booking.roomCode} - {booking.roomTypeName}</td>
-                      <td>{formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}</td>
-                      <td><span className={`badge badge-${booking.status}`}>{BOOKING_STATUS_TEXT[booking.status] || booking.status}</span></td>
-                      <td>{formatCurrency(booking.totalAmount)}</td>
-                      <td>{booking.status === "HOLD" ? holdRemaining(booking.holdExpiresAt) : "-"}</td>
+                      <td style={{fontWeight: 600}}>#{booking.id}</td>
                       <td>
-                        <div className="inline-actions">
-                          {booking.status === "HOLD" && <button type="button" onClick={() => payMock(booking.id)} disabled={loadingKey === `pay-${booking.id}`}>{loadingKey === `pay-${booking.id}` ? "Đang xử lý..." : "Thanh toán mô phỏng"}</button>}
-                          {(booking.status === "HOLD" || booking.status === "CONFIRMED") && <button type="button" className="btn-danger" onClick={() => cancelBooking(booking.id)} disabled={loadingKey === `cancel-${booking.id}`}>{loadingKey === `cancel-${booking.id}` ? "Đang hủy..." : "Hủy"}</button>}
-                          <button type="button" className="btn-outline" onClick={() => downloadPdf(booking.id)} disabled={loadingKey === `pdf-${booking.id}`}>{loadingKey === `pdf-${booking.id}` ? "Đang tải..." : "Tải PDF"}</button>
+                         <div style={{fontWeight: 600}}>{booking.roomCode}</div>
+                         <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>{booking.roomTypeName}</div>
+                      </td>
+                      <td>
+                         <div style={{marginBottom: 4}}>{formatDate(booking.checkInDate)}</div>
+                         <div>{formatDate(booking.checkOutDate)}</div>
+                      </td>
+                      <td><span className={`badge badge-${booking.status}`}>{BOOKING_STATUS_TEXT[booking.status] || booking.status}</span></td>
+                      <td style={{fontWeight: 'bold', color: 'var(--primary)'}}>{formatCurrency(booking.totalAmount)}</td>
+                      <td>
+                         <span style={{color: 'var(--warning)', fontWeight: 'bold'}}>
+                           {booking.status === "HOLD" ? holdRemaining(booking.holdExpiresAt) : "-"}
+                         </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          {booking.status === "HOLD" && <button type="button" className="btn" style={{padding: '6px 12px', fontSize: '0.75rem'}} onClick={() => payMock(booking.id)} disabled={loadingKey === `pay-${booking.id}`}>{loadingKey === `pay-${booking.id}` ? "..." : "Xác Thực VIP"}</button>}
+                          {(booking.status === "HOLD" || booking.status === "CONFIRMED") && <button type="button" className="btn btn-danger" style={{padding: '6px 12px', fontSize: '0.75rem'}} onClick={() => cancelBooking(booking.id)} disabled={loadingKey === `cancel-${booking.id}`}>{loadingKey === `cancel-${booking.id}` ? "..." : "Hủy Hoàn Tiền"}</button>}
+                          <button type="button" className="btn btn-outline" style={{padding: '6px 12px', fontSize: '0.75rem'}} onClick={() => downloadPdf(booking.id)} disabled={loadingKey === `pdf-${booking.id}`}>{loadingKey === `pdf-${booking.id}` ? "..." : "Bản In PDF"}</button>
                         </div>
                       </td>
                     </tr>
@@ -501,28 +534,37 @@ function HomePage() {
 
           <section className="grid grid-2">
             <article id="danh-gia" className="card">
-              <h2>Đánh giá dịch vụ</h2>
-              <form className="grid" onSubmit={submitReview}>
-                <label>Số sao
-                  <select value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}>
-                    <option value={5}>5 sao - Rất tốt</option><option value={4}>4 sao - Tốt</option><option value={3}>3 sao - Khá</option><option value={2}>2 sao - Cần cải thiện</option><option value={1}>1 sao - Không hài lòng</option>
+              <h2>Kênh Cảm Nhận Khách Hàng</h2>
+              <form className="grid" onSubmit={submitReview} style={{ background: 'var(--bg-color)', padding: 20, borderRadius: 10}}>
+                <label className="form-label">Thang điểm hài lòng
+                  <select className="form-control" style={{marginTop: 8}} value={reviewForm.rating} onChange={(e) => setReviewForm({ ...reviewForm, rating: e.target.value })}>
+                    <option value={5}>⭐⭐⭐⭐⭐ Tuyệt hảo</option>
+                    <option value={4}>⭐⭐⭐⭐ Tốt</option>
+                    <option value={3}>⭐⭐⭐ Tạm Được</option>
+                    <option value={2}>⭐⭐ Tệ</option>
+                    <option value={1}>⭐ Rất Tệ</option>
                   </select>
                 </label>
-                <label>Nhận xét<textarea value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} maxLength={500} required /></label>
-                <button type="submit">Gửi đánh giá</button>
+                <label className="form-label">Lời nhắn gửi
+                   <textarea className="form-control" style={{marginTop: 8, minHeight: 100}} value={reviewForm.comment} onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })} maxLength={500} required placeholder="Xin hãy cho chúng tôi biết cảm nhận của bạn..."/>
+                </label>
+                <button type="submit" className="btn">Ghi Nhận Phản Hồi</button>
               </form>
-              <div className="table-wrap" style={{ marginTop: 12 }}>
-                <table>
-                  <thead><tr><th>Khách hàng</th><th>Điểm</th><th>Nội dung</th><th>Thời gian</th></tr></thead>
-                  <tbody>{reviews.map((review) => <tr key={review.id}><td>{review.fullName}</td><td>{review.rating}/5</td><td>{review.comment}</td><td>{formatDateTime(review.createdAt)}</td></tr>)}</tbody>
-                </table>
+              <div className="timeline" style={{ marginTop: 24, padding: '0 12px' }}>
+                {reviews.map((review) => (
+                  <div className="timeline-item" key={review.id}>
+                    <p className="timeline-title">{review.fullName} <span style={{color: 'var(--gold)', marginLeft: 8}}>{"★".repeat(review.rating)}</span></p>
+                    <p style={{fontStyle: 'italic', marginBottom: 8}}>{review.comment}</p>
+                    <p className="timeline-meta">{formatDateTime(review.createdAt)}</p>
+                  </div>
+                ))}
               </div>
             </article>
 
-            <article id="ho-tro" className="card">
-              <h2>Thông tin vị trí và hỗ trợ</h2>
-              <iframe title="Bản đồ Rex Sài Gòn" width="100%" height="230" loading="lazy" referrerPolicy="no-referrer-when-downgrade" style={{ border: "1px solid #d9e0e7", borderRadius: 12 }} src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed" />
-              <div style={{ marginTop: 12 }}><SupportChatbot /></div>
+            <article className="card" style={{display: 'flex', flexDirection: 'column'}}>
+              <h2>Bản Đồ Kết Nối & Trung Tâm Hỗ Trợ</h2>
+              <iframe title="Bản đồ Rex Sài Gòn" width="100%" height="300" loading="lazy" referrerPolicy="no-referrer-when-downgrade" style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", flex: 1, marginBottom: 20 }} src="https://www.google.com/maps?q=Rex+Hotel+Saigon&output=embed" />
+              <div><SupportChatbot /></div>
             </article>
           </section>
 
@@ -530,10 +572,11 @@ function HomePage() {
             <h2>Báo cáo tóm tắt khách hàng</h2>
             <div className="report-grid">
               <div className="report-item"><strong>Khách hàng</strong><p>{user.fullName} - {user.email}</p></div>
-              <div className="report-item"><strong>Hạng VIP</strong><p>{vipInfo?.vipLevel || "NORMAL"} ({Math.round(Number(vipInfo?.discountRate || 0) * 100)}%)</p></div>
-              <div className="report-item"><strong>Booking xác nhận</strong><p>{statusStats.CONFIRMED}</p></div>
+              <div className="report-item"><strong>Hạng định danh</strong><p>{vipInfo?.vipLevel || "NORMAL"} ({Math.round(Number(vipInfo?.discountRate || 0) * 100)}%)</p></div>
+              <div className="report-item"><strong>Giao dịch thành công</strong><p>{statusStats.CONFIRMED}</p></div>
             </div>
           </section>
+
         </main>
       </div>
     </div>
