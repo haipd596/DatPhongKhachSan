@@ -72,10 +72,19 @@ public class BookingService {
 
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new ApiException("Khong tim thay user"));
-        Room room = roomRepository.findById(request.roomId())
+            
+        // BÀI TOÁN 4: Chống Race Condition Double Booking bằng Pessimistic Write Lock
+        // Dùng locking trực tiếp tại CSDL để ngăn chặn 2 thread đọc/ghi cùng lúc vào 1 phòng
+        Room room = roomRepository.findByIdForUpdate(request.roomId())
             .orElseThrow(() -> new ApiException("Khong tim thay phong"));
+            
         if (room.getStatus() != RoomStatus.AVAILABLE) {
             throw new ApiException("Phong dang bao tri hoac khong kha dung");
+        }
+        
+        // BÀI TOÁN 6: Kiểm tra sức chứa tối đa của phòng
+        if (request.guests() > room.getRoomType().getMaxGuests()) {
+            throw new ApiException("So khach (" + request.guests() + ") vuot qua suc chua toi da cua phong (" + room.getRoomType().getMaxGuests() + ")");
         }
 
         long overlapping = bookingRepository.countOverlapping(room.getId(), BLOCKING_STATUSES, checkIn, checkOut);
@@ -84,8 +93,12 @@ public class BookingService {
         }
 
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-        BigDecimal rawTotal = room.getRoomType().getBasePrice().multiply(BigDecimal.valueOf(nights));
-        BigDecimal total = vipPolicyService.applyDiscount(rawTotal, user.getVipLevel());
+        BigDecimal basePrice = room.getRoomType().getBasePrice().multiply(BigDecimal.valueOf(nights));
+        
+        // BÀI TOÁN C: Tính thuế VAT và Phí
+        BigDecimal discountedPrice = vipPolicyService.applyDiscount(basePrice, user.getVipLevel());
+        BigDecimal vatAmount = discountedPrice.multiply(new BigDecimal("0.10")); // 10% VAT
+        BigDecimal total = discountedPrice.add(vatAmount);
 
         Booking booking = new Booking(user, room, checkIn, checkOut, BookingStatus.HOLD, total);
         booking.setHoldExpiresAt(LocalDateTime.now().plusMinutes(holdMinutes));

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 public record HoldBookingRequest(
     @NotNull Long roomId,
     @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
-    @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate
+    @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
+    @NotNull jakarta.validation.constraints.Min(1) Integer guests
 ) {
 }

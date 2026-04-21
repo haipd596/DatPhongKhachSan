@@ -106,6 +106,7 @@ function HomePage() {
   const { user, logout } = useAuth();
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [guests, setGuests] = useState(2);
   const [roomTypes, setRoomTypes] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [summary, setSummary] = useState([]);
@@ -234,7 +235,7 @@ function HomePage() {
       ]);
       setRooms(roomRes.data);
       setSummary(summaryRes.data);
-      setMessage(`Đã cập nhật biểu đồ phòng với thông số mới.`);
+      setMessage(`Đã cập nhật biểu đồ phòng với thông số mới (dành cho ${guests} người).`);
     } catch (err) {
       setError(err.response?.data?.message || "Không tìm được phòng trống");
     }
@@ -253,7 +254,8 @@ function HomePage() {
       const res = await client.post("/bookings/hold", {
         roomId,
         checkInDate: checkIn,
-        checkOutDate: checkOut
+        checkOutDate: checkOut,
+        guests: Number(guests)
       });
       setMessage(`Thành công thiết lập yêu cầu giữ phòng [Mã: #${res.data.id}]. Hạn chót: ${formatDateTime(res.data.holdExpiresAt)}.`);
       await refreshBookingsAndVip();
@@ -437,6 +439,7 @@ function HomePage() {
                   <div className="form-row">
                     <label>Bắt đầu từ<input type="date" className="form-control" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required /></label>
                     <label>Kết thúc vào<input type="date" className="form-control" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required /></label>
+                    <label>Số khách<input type="number" className="form-control" min="1" max="10" value={guests} onChange={(e) => setGuests(e.target.value)} required /></label>
                   </div>
                   <div className="form-actions"><button type="submit" className="btn">Thiết Lập Bộ Đếm</button></div>
                 </form>
@@ -460,11 +463,16 @@ function HomePage() {
             <div className="stack">
                <article className="card">
                  <h2>Khảo Sát Danh Mục Lưu Trú</h2>
+                 <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 12}}>* Giá khi thanh toán sẽ được cộng thêm 10% Thuế GTGT (VAT) và trừ đi chiết khấu VIP.</p>
                   <div className="table-wrap">
                     <table>
                       <thead><tr><th>Khu Vực Phân Tầng/Mã</th><th>Hạng</th><th>Giá Niêm Yết / Đêm</th><th>Hành Động</th></tr></thead>
                       <tbody>
-                        {rooms.map((room) => (
+                        {rooms.map((room) => {
+                          const typeSummary = summary.find(s => s.roomTypeId === room.roomTypeId);
+                          const availCount = typeSummary ? typeSummary.availableRooms : 99;
+                          const isFomo = room.status === 'AVAILABLE' && availCount <= 3;
+                          return (
                           <tr key={room.id}>
                             <td>
                               <div style={{display: 'flex', flexDirection: 'column'}}>
@@ -475,9 +483,10 @@ function HomePage() {
                             <td>
                                <div>{room.roomTypeName}</div>
                                <span className={`badge badge-${room.status}`}>{room.status}</span>
+                               {isFomo && <div style={{fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 'bold', marginTop: 4, animation: 'blink 1.5s infinite'}}>🔥 Áp chót! Chỉ còn {availCount} phòng cuối cùng</div>}
                             </td>
                             <td>
-                               <div style={{ color: 'var(--gold-dark)', fontWeight: 'bold', fontSize: '1.05rem'}}>{formatCurrency(room.basePrice)}</div>
+                               <div style={{ color: 'var(--gold-dark)', fontWeight: 'bold', fontSize: '1.05rem'}}>{formatCurrency(room.basePrice)} <span style={{fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal'}}>+ VAT</span></div>
                                <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Sức chứa: {room.maxGuests} khách</div>
                             </td>
                             <td>
@@ -486,7 +495,7 @@ function HomePage() {
                                </button>
                             </td>
                           </tr>
-                        ))}
+                        )})}
                       </tbody>
                     </table>
                   </div>
