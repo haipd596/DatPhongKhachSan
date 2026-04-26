@@ -83,8 +83,9 @@ public class BookingService {
         }
         
         // BÀI TOÁN 6: Kiểm tra sức chứa tối đa của phòng
-        if (request.guests() > room.getRoomType().getMaxGuests()) {
-            throw new ApiException("So khach (" + request.guests() + ") vuot qua suc chua toi da cua phong (" + room.getRoomType().getMaxGuests() + ")");
+        int guests = request.guests() != null ? request.guests() : 1;
+        if (guests > room.getRoomType().getMaxGuests()) {
+            throw new ApiException("Số khách (" + guests + ") vượt quá sức chứa tối đa của phòng (" + room.getRoomType().getMaxGuests() + ")");
         }
 
         long overlapping = bookingRepository.countOverlapping(room.getId(), BLOCKING_STATUSES, checkIn, checkOut);

@@ -6,7 +6,7 @@ import client from "../api/client";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,19 +28,14 @@ export default function LoginPage() {
 
   return (
     <>
-      <h2 className="auth-title playfair-text">Chào Mừng Trở Lại</h2>
-      <p className="auth-sub">
-        Đăng nhập để vào thế giới đặc quyền của bạn
-      </p>
+      <h2 className="auth-title">Đăng nhập hệ thống</h2>
+      <p className="auth-sub">Truy cập tài khoản khách hàng hoặc tài khoản quản trị RexHotel.</p>
 
-      {error && <div className="alert alert-error">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-        {error}
-      </div>}
+      {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label">Email / Định danh</label>
+          <label className="form-label">Email</label>
           <input
             type="email"
             className="form-control"
@@ -52,9 +47,9 @@ export default function LoginPage() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <label className="form-label" style={{ display: "flex", justifyContent: "space-between" }}>
             <span>Mật khẩu</span>
-            <Link to="/forgot-password" style={{ textTransform: 'none', fontWeight: 500, fontSize: '0.8rem' }}>Quên mật khẩu?</Link>
+            <Link to="/forgot-password" style={{ fontWeight: 700, fontSize: "0.82rem" }}>Quên mật khẩu?</Link>
           </label>
           <input
             type="password"
@@ -62,18 +57,18 @@ export default function LoginPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
-            placeholder="••••••••"
+            placeholder="Nhập mật khẩu"
           />
         </div>
 
-        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 20 }}>
-          {loading ? "Đang xử lý phân quyền..." : "Đăng Nhập Quản Trị"}
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
       </form>
 
-      <div className="center-text" style={{ marginTop: 32, fontSize: '0.95rem' }}>
-        <span className="text-muted">Lần đầu đến với RexHotel? </span>
-        <Link to="/register" style={{ fontWeight: 600 }}>Tạo tài khoản VIP</Link>
+      <div className="center-text" style={{ marginTop: 26, fontSize: "0.95rem" }}>
+        <span className="text-muted">Chưa có tài khoản? </span>
+        <Link to="/register" style={{ fontWeight: 700 }}>Đăng ký khách hàng</Link>
       </div>
     </>
   );

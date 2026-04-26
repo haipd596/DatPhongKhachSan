@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rexhotel.booking.booking.Booking;
+import com.rexhotel.booking.booking.BookingStatus;
 import com.rexhotel.booking.booking.BookingService;
 import com.rexhotel.booking.booking.dto.BookingResponse;
 import com.rexhotel.booking.common.ApiException;
-import com.rexhotel.booking.payment.dto.MockPaymentRequest;
 import com.rexhotel.booking.payment.dto.PaymentHistoryResponse;
 
 @Service
@@ -79,7 +79,11 @@ public class PaymentService {
 
         if (success) {
             String email = booking.getUser().getEmail();
-            bookingService.confirmPaymentSuccess(booking.getId(), email);
+            if (booking.getStatus() == BookingStatus.HOLD) {
+                bookingService.confirmPaymentSuccess(booking.getId(), email);
+            } else if (booking.getStatus() != BookingStatus.CONFIRMED) {
+                throw new ApiException("Trạng thái đặt phòng không hợp lệ để xác nhận thanh toán: " + booking.getStatus());
+            }
             tx.setStatus(PaymentStatus.SUCCESS);
         } else {
             tx.setStatus(PaymentStatus.FAILED);

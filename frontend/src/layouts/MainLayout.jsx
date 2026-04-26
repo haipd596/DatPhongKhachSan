@@ -1,5 +1,6 @@
-import { Outlet, Navigate, Link, useNavigate } from "react-router-dom";
+import { Outlet, Navigate, NavLink, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import SupportChatbot from "../components/SupportChatbot";
 
 export default function MainLayout() {
   const { user, loading, logout } = useAuth();
@@ -17,28 +18,39 @@ export default function MainLayout() {
 
   return (
     <div className="main-layout">
-      <header className="topbar glass-header">
+      <header className="topbar">
         <div className="brand">
           <Link to="/customer/home">
-            <h1 className="brand-title">RexHotel <span className="vip-badge">{user.vipLevel}</span></h1>
-            <p className="brand-sub">Kính chào quý khách {user.fullName}</p>
+            <h1 className="brand-title">
+              RexHotel <span className="vip-badge">{user.vipLevel}</span>
+            </h1>
+            <p className="brand-sub">Kính chào {user.fullName}</p>
           </Link>
         </div>
         <nav className="topbar-nav">
-          <Link to="/customer/home" className="nav-link">Trang chủ</Link>
-          <Link to="/customer/search" className="nav-link">Tìm phòng</Link>
-          <Link to="/customer/bookings" className="nav-link">Booking của tôi</Link>
-          <Link to="/customer/history" className="nav-link">Lịch sử thanh toán</Link>
+          <NavLink to="/customer/home" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            Trang chủ
+          </NavLink>
+          <NavLink to="/customer/search" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            Tìm phòng
+          </NavLink>
+          <NavLink to="/customer/bookings" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            Đặt phòng của tôi
+          </NavLink>
+          <NavLink to="/customer/history" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            Thanh toán
+          </NavLink>
           <button className="btn btn-outline" onClick={handleLogout}>Đăng xuất</button>
         </nav>
       </header>
-      
+
       <main className="page-shell">
         <Outlet />
       </main>
+      <SupportChatbot />
 
       <footer className="footer">
-        <p>&copy; 2026 RexHotel. Đồ án tốt nghiệp.</p>
+        <p>&copy; 2026 RexHotel. Đồ án tốt nghiệp hệ thống đặt phòng khách sạn.</p>
       </footer>
     </div>
   );

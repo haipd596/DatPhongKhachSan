@@ -2,48 +2,50 @@ import { useState, useEffect } from "react";
 import client from "../../api/client";
 import { format } from "date-fns";
 
+const currency = new Intl.NumberFormat("vi-VN");
+
 export default function PaymentHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     client.get("/payments/history")
-      .then(res => setHistory(res.data))
+      .then((res) => setHistory(res.data))
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="center-text">Đang tải...</div>;
+  if (loading) return <div className="loading-state card">Đang tải lịch sử giao dịch...</div>;
 
   return (
     <div className="payment-history-page">
-      <h2 className="page-title">Lịch Sử Giao Dịch</h2>
+      <h2 className="page-title">Lịch sử thanh toán</h2>
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Ngày GD</th>
-              <th>Mã GD</th>
+              <th>Ngày giao dịch</th>
+              <th>Mã giao dịch</th>
               <th>Phòng</th>
-              <th>Số tiền (VNĐ)</th>
+              <th>Số tiền</th>
               <th>Trạng thái</th>
             </tr>
           </thead>
           <tbody>
-            {history.map(tx => (
+            {history.map((tx) => (
               <tr key={tx.id}>
                 <td>{format(new Date(tx.createdAt), "dd/MM/yyyy HH:mm")}</td>
-                <td><code style={{ fontSize: '0.8rem', color: 'var(--primary-dark)' }}>{tx.transactionCode}</code></td>
+                <td><code>{tx.transactionCode}</code></td>
                 <td>{tx.roomTypeName} ({tx.roomCode})</td>
-                <td style={{ fontWeight: 600 }}>{new Intl.NumberFormat('vi-VN').format(tx.amount)}</td>
+                <td><strong>{currency.format(tx.amount)} VNĐ</strong></td>
                 <td>
-                  <span className={`badge badge-${tx.status === 'SUCCESS' ? 'CONFIRMED' : tx.status === 'REFUNDED' ? 'CANCELLED' : tx.status}`}>{tx.status}</span>
+                  <span className={`badge badge-${tx.status}`}>{tx.status}</span>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {history.length === 0 && (
-          <div className="center-text text-muted" style={{ padding: 30 }}>Không có lịch sử giao dịch</div>
+          <div className="empty-state">Chưa có lịch sử giao dịch.</div>
         )}
       </div>
     </div>

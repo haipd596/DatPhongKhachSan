@@ -15,27 +15,31 @@ export default function BookingManager() {
     if (filters.email) q.append("email", filters.email);
 
     client.get(`/manager/bookings?${q.toString()}`)
-      .then(res => setBookings(res.data))
+      .then((res) => setBookings(Array.isArray(res.data) ? res.data : res.data.content || []))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchBookings();
-  }, [filters.status, filters.checkIn]); // fetch tu dong khi select status hoac date
+  }, [filters.status, filters.checkIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCheckIn = async (id) => {
     try {
       await client.post(`/manager/bookings/${id}/check-in`);
       fetchBookings();
-    } catch (err) { alert(err.response?.data?.message); }
-  }
+    } catch (err) {
+      alert(err.response?.data?.message || "Không thể check-in");
+    }
+  };
 
   const handleCheckOut = async (id) => {
     try {
       await client.post(`/manager/bookings/${id}/check-out`);
       fetchBookings();
-    } catch (err) { alert(err.response?.data?.message); }
-  }
+    } catch (err) {
+      alert(err.response?.data?.message || "Không thể check-out");
+    }
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -44,34 +48,36 @@ export default function BookingManager() {
 
   return (
     <div className="booking-manager">
-      <h2 className="page-title">Quản lý Đặt phòng</h2>
+      <h2 className="page-title">Quản lý đặt phòng</h2>
 
-      <div className="glass-card" style={{ padding: 20, marginBottom: 24 }}>
-        <form onSubmit={handleSearchSubmit} className="grid-4" style={{ gap: 12, alignItems: 'end' }}>
-          <div>
-            <label className="form-label">Email Khách</label>
-            <input type="text" className="form-control" placeholder="Tìm theo email" value={filters.email} onChange={e => setFilters({...filters, email: e.target.value})} />
+      <div className="card" style={{ marginBottom: 24 }}>
+        <form onSubmit={handleSearchSubmit} className="grid-4">
+          <div className="form-group">
+            <label className="form-label">Email khách hàng</label>
+            <input type="text" className="form-control" placeholder="Tìm theo email" value={filters.email} onChange={(e) => setFilters({ ...filters, email: e.target.value })} />
           </div>
-          <div>
+          <div className="form-group">
             <label className="form-label">Trạng thái</label>
-            <select className="form-control" value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+            <select className="form-control" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
               <option value="">Tất cả</option>
               <option value="HOLD">HOLD</option>
               <option value="CONFIRMED">CONFIRMED</option>
               <option value="CHECKED_IN">CHECKED_IN</option>
+              <option value="CHECKED_OUT">CHECKED_OUT</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
           </div>
-          <div>
-            <label className="form-label">Sau ngày Check In</label>
-            <input type="date" className="form-control" value={filters.checkIn} onChange={e => setFilters({...filters, checkIn: e.target.value})} />
+          <div className="form-group">
+            <label className="form-label">Từ ngày nhận phòng</label>
+            <input type="date" className="form-control" value={filters.checkIn} onChange={(e) => setFilters({ ...filters, checkIn: e.target.value })} />
           </div>
-          <div>
-            <button type="submit" className="btn full-width">Tìm Kiếm</button>
+          <div className="form-group" style={{ alignSelf: "end" }}>
+            <button type="submit" className="btn full-width">Tìm kiếm</button>
           </div>
         </form>
       </div>
 
-      {loading ? <p>Đang tải...</p> : (
+      {loading ? <div className="loading-state card">Đang tải danh sách đặt phòng...</div> : (
         <div className="table-wrap">
           <table>
             <thead>
@@ -85,25 +91,23 @@ export default function BookingManager() {
               </tr>
             </thead>
             <tbody>
-              {bookings.map(b => (
-                <tr key={b.id}>
-                  <td>#{b.id}</td>
+              {bookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td>#{booking.id}</td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{b.customerName}</div>
-                    <div className="text-muted" style={{ fontSize: '0.8rem' }}>{b.customerEmail}</div>
+                    <strong>{booking.customerName}</strong>
+                    <div className="text-muted" style={{ fontSize: "0.84rem" }}>{booking.customerEmail}</div>
                   </td>
-                  <td>{b.roomCode} ({b.roomTypeName})</td>
-                  <td style={{ fontSize: '0.85rem' }}>
-                    {format(new Date(b.checkInDate), "dd/MM")} - {format(new Date(b.checkOutDate), "dd/MM/yyyy")}
-                  </td>
-                  <td><span className={`badge badge-${b.status}`}>{b.status}</span></td>
+                  <td>{booking.roomCode} ({booking.roomTypeName})</td>
+                  <td>{format(new Date(booking.checkInDate), "dd/MM")} - {format(new Date(booking.checkOutDate), "dd/MM/yyyy")}</td>
+                  <td><span className={`badge badge-${booking.status}`}>{booking.status}</span></td>
                   <td>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      {b.status === 'CONFIRMED' && (
-                        <button className="btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleCheckIn(b.id)}>Check-In</button>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {booking.status === "CONFIRMED" && (
+                        <button className="btn btn-sm" onClick={() => handleCheckIn(booking.id)}>Check-in</button>
                       )}
-                      {b.status === 'CHECKED_IN' && (
-                        <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: '0.8rem' }} onClick={() => handleCheckOut(b.id)}>Check-Out</button>
+                      {booking.status === "CHECKED_IN" && (
+                        <button className="btn btn-outline btn-sm" onClick={() => handleCheckOut(booking.id)}>Check-out</button>
                       )}
                     </div>
                   </td>
@@ -111,6 +115,7 @@ export default function BookingManager() {
               ))}
             </tbody>
           </table>
+          {bookings.length === 0 && <div className="empty-state">Không có đặt phòng phù hợp.</div>}
         </div>
       )}
     </div>

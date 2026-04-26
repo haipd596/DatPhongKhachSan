@@ -44,6 +44,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
+                .requestMatchers("/api/payments/vnpay/sandbox", "/api/payments/vnpay/callback").permitAll()
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
                 .anyRequest().authenticated()
             )

@@ -8,15 +8,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record RoomTypeRequest(
-    @NotBlank(message = "Ten loai phong khong duoc de trong")
+    @NotBlank(message = "Tên loại phòng không được để trống")
     String name,
 
-    @NotNull(message = "Gia co ban khong duoc de trong")
-    @Positive(message = "Gia co ban phai lon hon 0")
+    @NotNull(message = "Giá cơ bản không được để trống")
+    @Positive(message = "Giá cơ bản phải lớn hơn 0")
     BigDecimal basePrice,
 
-    @NotNull(message = "So khach toi da khong duoc de trong")
-    @Min(value = 1, message = "So khach toi da phai it nhat 1")
+    @NotNull(message = "Số khách tối đa không được để trống")
+    @Min(value = 1, message = "Số khách tối đa phải ít nhất 1")
     Integer maxGuests,
 
     String description,

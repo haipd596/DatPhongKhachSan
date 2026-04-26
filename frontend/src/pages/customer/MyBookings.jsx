@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import client from "../../api/client";
 import { format } from "date-fns";
 
+const currency = new Intl.NumberFormat("vi-VN");
+
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ export default function MyBookings() {
   const fetchBookings = () => {
     setLoading(true);
     client.get("/bookings/me")
-      .then(res => setBookings(res.data))
+      .then((res) => setBookings(res.data))
       .finally(() => setLoading(false));
   };
 
@@ -24,116 +26,103 @@ export default function MyBookings() {
       const res = await client.post("/payments/vnpay/create", { bookingId });
       window.location.href = res.data.paymentUrl;
     } catch (err) {
-      alert(err.response?.data?.message || "Lỗi tạo thanh toán");
+      alert(err.response?.data?.message || "Không tạo được giao dịch thanh toán");
       setProcessingId(null);
     }
   };
 
   const handleCancel = async (bookingId) => {
-    if (!window.confirm("Bạn có chắc chắn muốn hủy đặt phòng này? Chính sách hoàn tiền sẽ áp dụng.")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn hủy đặt phòng này? Chính sách hoàn tiền sẽ được áp dụng.")) return;
     setProcessingId(bookingId);
     try {
       await client.post(`/bookings/${bookingId}/cancel`);
       alert("Hủy đặt phòng thành công");
       fetchBookings();
     } catch (err) {
-      alert(err.response?.data?.message || "Lỗi hủy đặt phòng");
+      alert(err.response?.data?.message || "Không hủy được đặt phòng");
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleReviewClick = (bookingId) => {
-    // Basic implementation for review popup (mocked logic or redirect)
     const rating = prompt("Đánh giá số sao (1-5):", "5");
     if (!rating) return;
-    const comment = prompt("Lời nhận xét:", "Rất tuyệt!");
+    const comment = prompt("Nhận xét của bạn:", "Dịch vụ tốt, phòng sạch sẽ.");
     if (!comment) return;
-    
-    client.post("/reviews", { rating: parseInt(rating), comment })
-      .then(() => alert("Cảm ơn đánh giá của bạn!"))
-      .catch(err => alert(err.response?.data?.message || "Lỗi đăng đánh giá"));
+
+    client.post("/reviews", { bookingId, rating: parseInt(rating, 10), comment })
+      .then(() => alert("Cảm ơn đánh giá của bạn"))
+      .catch((err) => alert(err.response?.data?.message || "Không gửi được đánh giá"));
   };
 
-  if (loading) return <div className="center-text">Đang tải...</div>;
+  if (loading) return <div className="loading-state card">Đang tải danh sách đặt phòng...</div>;
 
   return (
     <div className="bookings-page">
-      <h2 className="page-title">Booking của tôi</h2>
+      <h2 className="page-title">Đặt phòng của tôi</h2>
 
-      <div className="stack" style={{ gap: 24 }}>
-        {bookings.map(b => (
-          <div key={b.id} className="glass-card" style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      <div className="stack">
+        {bookings.map((booking) => (
+          <article key={booking.id} className="booking-card card">
+            <div className="booking-card-head">
               <div>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: 4, color: 'var(--primary-dark)' }}>{b.roomTypeName} (Phòng {b.roomCode})</h3>
-                <p className="text-muted" style={{ fontSize: '0.9rem' }}>Mã Booking: #{b.id} • Đặt ngày: {format(new Date(b.createdAt), "dd/MM/yyyy")}</p>
+                <h3 style={{ marginBottom: 4 }}>{booking.roomTypeName} - Phòng {booking.roomCode}</h3>
+                <p className="text-muted" style={{ marginBottom: 0 }}>
+                  Mã đặt phòng #{booking.id} · Ngày tạo {format(new Date(booking.createdAt), "dd/MM/yyyy")}
+                </p>
               </div>
-              <span className={`badge badge-${b.status}`}>{b.status}</span>
+              <span className={`badge badge-${booking.status}`}>{booking.status}</span>
             </div>
 
-            <div className="grid-3" style={{ marginBottom: 20, gap: 16 }}>
+            <div className="grid-3" style={{ marginTop: 20 }}>
               <div>
-                <p className="text-muted" style={{ fontSize: '0.85rem' }}>Check In</p>
-                <p style={{ fontWeight: 600 }}>{format(new Date(b.checkInDate), "dd/MM/yyyy")}</p>
+                <p className="text-muted" style={{ marginBottom: 4 }}>Ngày nhận phòng</p>
+                <strong>{format(new Date(booking.checkInDate), "dd/MM/yyyy")}</strong>
               </div>
               <div>
-                <p className="text-muted" style={{ fontSize: '0.85rem' }}>Check Out</p>
-                <p style={{ fontWeight: 600 }}>{format(new Date(b.checkOutDate), "dd/MM/yyyy")}</p>
+                <p className="text-muted" style={{ marginBottom: 4 }}>Ngày trả phòng</p>
+                <strong>{format(new Date(booking.checkOutDate), "dd/MM/yyyy")}</strong>
               </div>
               <div>
-                <p className="text-muted" style={{ fontSize: '0.85rem' }}>Tổng tiền</p>
-                <p style={{ fontWeight: 700, color: 'var(--text-main)' }}>{new Intl.NumberFormat('vi-VN').format(b.totalAmount)} VNĐ</p>
+                <p className="text-muted" style={{ marginBottom: 4 }}>Tổng tiền</p>
+                <strong>{currency.format(booking.totalAmount)} VNĐ</strong>
               </div>
             </div>
 
-            {b.status === "CANCELLED" && b.refundAmount > 0 && (
-              <div className="alert alert-success" style={{ marginBottom: 20 }}>
-                <strong>Hoàn tiền:</strong> {new Intl.NumberFormat('vi-VN').format(b.refundAmount)} VNĐ đã được ghi nhận.
+            {booking.status === "CANCELLED" && booking.refundAmount > 0 && (
+              <div className="alert alert-success" style={{ marginTop: 18, marginBottom: 0 }}>
+                Số tiền hoàn dự kiến: {currency.format(booking.refundAmount)} VNĐ.
               </div>
             )}
 
-            <div className="actions" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              {b.status === "HOLD" && (
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
+              {booking.status === "HOLD" && (
                 <>
-                  <button 
-                    className="btn" 
-                    disabled={processingId === b.id} 
-                    onClick={() => handleVNPay(b.id)}
-                  >
-                    Thanh Toán VNPay
+                  <button className="btn" disabled={processingId === booking.id} onClick={() => handleVNPay(booking.id)}>
+                    Thanh toán VNPay
                   </button>
-                  <button 
-                    className="btn btn-outline btn-danger" 
-                    disabled={processingId === b.id} 
-                    onClick={() => handleCancel(b.id)}
-                  >
-                    Hủy Đặt
+                  <button className="btn btn-outline btn-danger" disabled={processingId === booking.id} onClick={() => handleCancel(booking.id)}>
+                    Hủy đặt phòng
                   </button>
                 </>
               )}
-              {b.status === "CONFIRMED" && (
-                <button 
-                  className="btn btn-outline btn-danger" 
-                  disabled={processingId === b.id} 
-                  onClick={() => handleCancel(b.id)}
-                >
-                  Hủy (Có tính phí)
+              {booking.status === "CONFIRMED" && (
+                <button className="btn btn-outline btn-danger" disabled={processingId === booking.id} onClick={() => handleCancel(booking.id)}>
+                  Hủy theo chính sách
                 </button>
               )}
-              {b.status === "CHECKED_OUT" && (
-                <button 
-                  className="btn btn-outline" 
-                  onClick={() => handleReviewClick(b.id)}
-                >
+              {booking.status === "CHECKED_OUT" && (
+                <button className="btn btn-outline" onClick={() => handleReviewClick(booking.id)}>
                   Đánh giá dịch vụ
                 </button>
               )}
             </div>
-          </div>
+          </article>
         ))}
+
         {bookings.length === 0 && (
-          <div className="center-text text-muted" style={{ padding: 40 }}>Bạn chưa có ghi nhận đặt phòng nào.</div>
+          <div className="empty-state card">Bạn chưa có đặt phòng nào. Hãy tìm phòng để bắt đầu.</div>
         )}
       </div>
     </div>

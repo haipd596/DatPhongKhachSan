@@ -19,13 +19,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
-        FieldError firstError = ex.getBindingResult().getFieldErrors().get(0);
-        return ResponseEntity.badRequest().body(Map.of("message", firstError.getDefaultMessage()));
+        String message = "Dữ liệu gửi lên không hợp lệ";
+        if (!ex.getBindingResult().getFieldErrors().isEmpty()) {
+            FieldError firstError = ex.getBindingResult().getFieldErrors().get(0);
+            message = firstError.getDefaultMessage();
+        }
+        return ResponseEntity.badRequest().body(Map.of("message", message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleOther(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Map.of("message", "Server error"));
+            .body(Map.of("message", "Lỗi hệ thống"));
     }
 }

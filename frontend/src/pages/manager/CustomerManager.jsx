@@ -7,36 +7,37 @@ export default function CustomerManager() {
 
   useEffect(() => {
     client.get("/manager/customers")
-      .then(res => setCustomers(res.data))
+      .then((res) => setCustomers(Array.isArray(res.data) ? res.data : res.data.content || []))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="customer-manager">
-      <h2 className="page-title">Khách Hàng Thân Thiết</h2>
-      
-      {loading ? <p>Đang tải...</p> : (
+      <h2 className="page-title">Khách hàng thân thiết</h2>
+
+      {loading ? <div className="loading-state card">Đang tải danh sách khách hàng...</div> : (
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Họ và Tên</th>
+                <th>Họ và tên</th>
                 <th>Email</th>
-                <th>Hạng Thành Viên</th>
-                <th>Số lần Book</th>
+                <th>Hạng thành viên</th>
+                <th>Số lần đặt</th>
               </tr>
             </thead>
             <tbody>
-              {customers.map(c => (
-                <tr key={c.id}>
-                  <td style={{ fontWeight: 600 }}>{c.fullName}</td>
-                  <td className="text-muted">{c.email}</td>
-                  <td><span className="vip-badge" style={{ marginLeft: 0 }}>{c.vipLevel}</span></td>
-                  <td><strong>{c.bookingCount}</strong></td>
+              {customers.map((customer) => (
+                <tr key={customer.id}>
+                  <td><strong>{customer.fullName}</strong></td>
+                  <td className="text-muted">{customer.email}</td>
+                  <td><span className="vip-badge">{customer.vipLevel}</span></td>
+                  <td><strong>{customer.bookingCount}</strong></td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {customers.length === 0 && <div className="empty-state">Chưa có khách hàng nào.</div>}
         </div>
       )}
     </div>

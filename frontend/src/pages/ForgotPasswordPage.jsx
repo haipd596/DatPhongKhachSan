@@ -11,18 +11,19 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMsg(""); setError("");
+    setMsg("");
+    setError("");
     setLoading(true);
     try {
       const res = await client.post("/auth/forgot-password", { email });
       setMsg(res.data.message || "Đã gửi mã xác nhận. Vui lòng kiểm tra email.");
       setTimeout(() => navigate(`/reset-password?email=${email}`), 2000);
     } catch (err) {
-      if (err.response?.status === 429) {
-        setError("Bạn thao tác quá nhanh. Vui lòng thử lại sau 1 phút.");
-      } else {
-        setError(err.response?.data?.message || "Lỗi hệ thống");
-      }
+      setError(
+        err.response?.status === 429
+          ? "Bạn thao tác quá nhanh. Vui lòng thử lại sau 1 phút."
+          : err.response?.data?.message || "Lỗi hệ thống"
+      );
     } finally {
       setLoading(false);
     }
@@ -30,17 +31,15 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <h2 className="page-title center-text">Quên Mật Khẩu</h2>
-      <p className="text-muted center-text" style={{ marginBottom: 24 }}>
-        Nhập email tài khoản để nhận mã khôi phục
-      </p>
+      <h2 className="auth-title">Quên mật khẩu</h2>
+      <p className="auth-sub">Nhập email tài khoản để nhận mã khôi phục mật khẩu.</p>
 
       {error && <div className="alert alert-error">{error}</div>}
       {msg && <div className="alert alert-success">{msg}</div>}
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="form-label">Địa chỉ Email</label>
+          <label className="form-label">Địa chỉ email</label>
           <input
             type="email"
             className="form-control"
@@ -50,14 +49,14 @@ export default function ForgotPasswordPage() {
             autoCapitalize="none"
           />
         </div>
-        
-        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 16 }}>
-          {loading ? "Đang gửi email..." : "Gửi mã Reset Password"}
+
+        <button type="submit" className="btn full-width" disabled={loading} style={{ marginTop: 12 }}>
+          {loading ? "Đang gửi email..." : "Gửi mã khôi phục"}
         </button>
       </form>
 
       <div className="center-text" style={{ marginTop: 24 }}>
-        <Link to="/login">← Quay lại Đăng nhập</Link>
+        <Link to="/login">Quay lại đăng nhập</Link>
       </div>
     </>
   );

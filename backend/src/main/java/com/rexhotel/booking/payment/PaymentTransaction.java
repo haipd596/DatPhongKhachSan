@@ -35,7 +35,7 @@ public class PaymentTransaction {
     @Column(nullable = false, length = 20)
     private PaymentStatus status;
 
-    @Column(nullable = false, length = 60)
+    @Column(nullable = false, unique = true, length = 60)
     private String transactionCode;
 
     @Column(nullable = false)

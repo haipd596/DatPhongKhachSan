@@ -6,35 +6,36 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <div className="home-hero glass-card" style={{ padding: 40, textAlign: 'center', marginBottom: 40 }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: 16, color: 'var(--primary-dark)' }}>
-          Kỳ Nghỉ Hoàn Hảo Bắt Đầu Từ Đây
-        </h1>
-        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: 32, maxWidth: 600, margin: '0 auto 32px' }}>
-          Trải nghiệm hệ thống đặt phòng thông minh, sang trọng và tiện lợi cùng RexHotel.
-        </p>
-        <Link to="/customer/search" className="btn" style={{ fontSize: '1.1rem', padding: '16px 32px' }}>
-          Tìm Phòng Ngay
-        </Link>
-      </div>
+      <section className="home-hero">
+        <div>
+          <h1>Kỳ nghỉ hoàn hảo bắt đầu từ một lần đặt phòng rõ ràng</h1>
+          <p>
+            RexHotel giúp bạn tìm phòng trống, giữ phòng, thanh toán và quản lý
+            lịch sử đặt phòng trong một quy trình thống nhất.
+          </p>
+          <Link to="/customer/search" className="btn" style={{ marginTop: 10 }}>
+            Tìm phòng ngay
+          </Link>
+        </div>
+      </section>
 
-      <div className="grid-3">
+      <section className="grid-3">
         <div className="stat-card">
-          <h3 className="stat-title">Thành viên VIP</h3>
-          <p className="stat-value" style={{ color: 'var(--accent)' }}>{user?.vipLevel}</p>
-          <p className="text-muted" style={{ marginTop: 8 }}>Tận hưởng ưu đãi độc quyền.</p>
+          <h3 className="stat-title">Hạng thành viên</h3>
+          <p className="stat-value">{user?.vipLevel || "STANDARD"}</p>
+          <p className="text-muted" style={{ marginBottom: 0 }}>Tự động áp dụng ưu đãi theo chính sách VIP.</p>
         </div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--info)' }}>
-          <h3 className="stat-title">Phòng Trống</h3>
-          <p className="stat-value" style={{ color: 'var(--info)' }}>24/7</p>
-          <p className="text-muted" style={{ marginTop: 8 }}>Hỗ trợ suốt kỳ nghỉ của bạn.</p>
+        <div className="stat-card">
+          <h3 className="stat-title">Tra cứu phòng</h3>
+          <p className="stat-value">24/7</p>
+          <p className="text-muted" style={{ marginBottom: 0 }}>Kiểm tra phòng theo ngày nhận, ngày trả và số khách.</p>
         </div>
-        <div className="stat-card" style={{ borderLeftColor: 'var(--success)' }}>
-          <h3 className="stat-title">Thanh Toán</h3>
-          <p className="stat-value" style={{ color: 'var(--success)' }}>VNPay</p>
-          <p className="text-muted" style={{ marginTop: 8 }}>Nhanh chóng và an toàn tuyệt đối.</p>
+        <div className="stat-card">
+          <h3 className="stat-title">Thanh toán</h3>
+          <p className="stat-value">VNPay</p>
+          <p className="text-muted" style={{ marginBottom: 0 }}>Mô phỏng thanh toán phù hợp phạm vi đồ án tốt nghiệp.</p>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.rexhotel.booking.payment;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -89,13 +90,28 @@ public class VnpayMockService {
         return params.get("vnp_TxnRef");
     }
 
+    public String buildSignedResultQuery(Map<String, String> originalParams, String responseCode) {
+        TreeMap<String, String> resultParams = new TreeMap<>(originalParams);
+        resultParams.remove("vnp_SecureHash");
+        resultParams.put("vnp_ResponseCode", responseCode);
+        resultParams.put("vnp_TransactionStatus", responseCode);
+        resultParams.put("vnp_PayDate", LocalDateTime.now().format(FMT));
+        String secureHash = hmacSHA256(buildQueryString(resultParams), mockSecret);
+        resultParams.put("vnp_SecureHash", secureHash);
+        return buildQueryString(resultParams);
+    }
+
     private String buildQueryString(Map<String, String> params) {
         StringBuilder sb = new StringBuilder();
         params.forEach((k, v) -> {
             if (sb.length() > 0) sb.append('&');
-            sb.append(k).append('=').append(v);
+            sb.append(urlEncode(k)).append('=').append(urlEncode(v));
         });
         return sb.toString();
+    }
+
+    private String urlEncode(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 
     private String hmacSHA256(String data, String secret) {

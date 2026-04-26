@@ -20,33 +20,33 @@ export default function ManagerLayout() {
 
   return (
     <div className="manager-layout">
-      <div className="manager-sidebar">
+      <aside className="manager-sidebar">
         <div className="sidebar-brand">
           <h2>RexHotel Admin</h2>
           <p>Xin chào, {user.fullName}</p>
         </div>
         <nav className="sidebar-nav">
-          <Link to="/manager/dashboard" className={`side-link ${currentPath.includes('/dashboard') ? 'active' : ''}`}>
-            📊 Dashboard
+          <Link to="/manager/dashboard" className={`side-link ${currentPath.includes("/dashboard") ? "active" : ""}`}>
+            Tổng quan
           </Link>
-          <Link to="/manager/rooms" className={`side-link ${currentPath.includes('/rooms') ? 'active' : ''}`}>
-            🛏️ Quản lý Phòng
+          <Link to="/manager/rooms" className={`side-link ${currentPath.includes("/rooms") ? "active" : ""}`}>
+            Quản lý phòng
           </Link>
-          <Link to="/manager/bookings" className={`side-link ${currentPath.includes('/bookings') ? 'active' : ''}`}>
-            📅 Quản lý Đặt phòng
+          <Link to="/manager/bookings" className={`side-link ${currentPath.includes("/bookings") ? "active" : ""}`}>
+            Quản lý đặt phòng
           </Link>
-          <Link to="/manager/customers" className={`side-link ${currentPath.includes('/customers') ? 'active' : ''}`}>
-            👥 Khách hàng VIP
+          <Link to="/manager/customers" className={`side-link ${currentPath.includes("/customers") ? "active" : ""}`}>
+            Khách hàng
           </Link>
         </nav>
         <div className="sidebar-footer">
           <button className="btn btn-outline full-width" onClick={handleLogout}>Đăng xuất</button>
         </div>
-      </div>
+      </aside>
 
       <div className="manager-content">
-        <header className="manager-topbar glass-header">
-          <h3 className="page-title">Workspace Quản Trị</h3>
+        <header className="manager-topbar">
+          <h3 className="page-title" style={{ marginBottom: 0 }}>Không gian quản trị</h3>
         </header>
         <main className="manager-main">
           <Outlet />
