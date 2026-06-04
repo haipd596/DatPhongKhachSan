@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "concurrently -k -n BE,FE -c yellow,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "mvn -f backend/pom.xml spring-boot:run",
+    "dev:no-docker": "powershell -ExecutionPolicy Bypass -File .\\start-local.ps1",
+    "dev:backend": "mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local",
     "dev:frontend": "npm --prefix frontend run dev",
-    "db:up": "docker compose up -d mysql",
+    "db:up": "docker compose up -d mysql mailhog",
     "db:down": "docker compose down",
     "db:logs": "docker compose logs -f mysql",
     "deploy:up": "docker compose -f docker-compose.prod.yml up -d --build",

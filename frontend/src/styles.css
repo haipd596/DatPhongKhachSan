@@ -828,6 +828,26 @@ tr:last-child td {
   min-height: 100vh;
   font-family: "Inter", sans-serif;
 }
+.hotel-public-page-embedded {
+  background: transparent;
+  min-height: auto;
+}
+.hotel-public-page-embedded .hotel-hero {
+  margin-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+.hotel-public-page-embedded .hotel-content,
+.hotel-public-page-embedded .hotel-nav-tabs {
+  padding-left: 0;
+  padding-right: 0;
+}
+.hotel-public-page-embedded .hotel-side-card {
+  top: 92px;
+}
+.customer-home-stats {
+  margin-top: 24px;
+}
 
 /* Topbar */
 .hotel-topbar {
@@ -1527,6 +1547,9 @@ tr:last-child td {
 }
 @media (max-width: 640px) {
   .hotel-hero, .hotel-content, .hotel-topbar-inner, .hotel-nav-tabs { padding-left: 16px; padding-right: 16px; }
+  .hotel-public-page-embedded .hotel-hero,
+  .hotel-public-page-embedded .hotel-content,
+  .hotel-public-page-embedded .hotel-nav-tabs { padding-left: 0; padding-right: 0; }
   .hotel-gallery-img { height: 220px; }
   .hotel-nav-tabs { overflow-x: auto; flex-wrap: nowrap; }
   .hotel-nav-tab { padding: 12px 14px; font-size: 0.82rem; }

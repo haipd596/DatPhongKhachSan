@@ -78,7 +78,7 @@ function StarRating({ score, max = 10 }) {
   );
 }
 
-export default function HotelPage() {
+export default function HotelPage({ embedded = false }) {
   const [activeImg, setActiveImg] = useState(0);
   const [roomTypes, setRoomTypes] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -112,21 +112,25 @@ export default function HotelPage() {
     { id: "map", label: "Vị trí" },
   ];
 
+  const bookingLink = embedded ? "/customer/search" : "/register";
+
   return (
-    <div className="hotel-public-page">
+    <div className={`hotel-public-page ${embedded ? "hotel-public-page-embedded" : ""}`}>
       {/* Topbar */}
-      <header className="hotel-topbar">
-        <div className="hotel-topbar-inner">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: "1.6rem" }}>🏨</span>
-            <span className="hotel-topbar-brand">Rex Hotel Saigon</span>
+      {!embedded && (
+        <header className="hotel-topbar">
+          <div className="hotel-topbar-inner">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: "1.6rem" }}>🏨</span>
+              <span className="hotel-topbar-brand">Rex Hotel Saigon</span>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <Link to="/login" className="htb-btn htb-btn-outline">Đăng nhập</Link>
+              <Link to="/register" className="htb-btn htb-btn-primary">Đặt phòng ngay</Link>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <Link to="/login" className="htb-btn htb-btn-outline">Đăng nhập</Link>
-            <Link to="/register" className="htb-btn htb-btn-primary">Đặt phòng ngay</Link>
-          </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Hero Gallery */}
       <section className="hotel-hero">
@@ -191,12 +195,14 @@ export default function HotelPage() {
             ))}
           </div>
 
-          <Link to="/register" className="htb-btn htb-btn-primary full-w" style={{ marginTop: 16, display: "block", textAlign: "center", padding: "14px 0" }}>
+          <Link to={bookingLink} className="htb-btn htb-btn-primary full-w" style={{ marginTop: 16, display: "block", textAlign: "center", padding: "14px 0" }}>
             🛎 Đặt phòng ngay
           </Link>
-          <Link to="/login" className="htb-btn htb-btn-outline full-w" style={{ marginTop: 8, display: "block", textAlign: "center", padding: "12px 0" }}>
-            Đăng nhập để đặt phòng
-          </Link>
+          {!embedded && (
+            <Link to="/login" className="htb-btn htb-btn-outline full-w" style={{ marginTop: 8, display: "block", textAlign: "center", padding: "12px 0" }}>
+              Đăng nhập để đặt phòng
+            </Link>
+          )}
         </aside>
       </section>
 
@@ -277,7 +283,7 @@ export default function HotelPage() {
                     <span className="hotel-room-price-val">{formatCurrency(rt.basePrice)}</span>
                     <span className="hotel-room-price-unit">/đêm</span>
                   </div>
-                  <Link to="/register" className="htb-btn htb-btn-primary" style={{ marginTop: 12, display: "block", textAlign: "center" }}>
+                  <Link to={bookingLink} className="htb-btn htb-btn-primary" style={{ marginTop: 12, display: "block", textAlign: "center" }}>
                     Đặt phòng
                   </Link>
                 </div>
@@ -376,7 +382,7 @@ export default function HotelPage() {
         <section id="reviews-section" className="hotel-section">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <h2 className="hotel-section-title" style={{ marginBottom: 0 }}>Đánh giá từ khách hàng</h2>
-            <Link to="/register" className="htb-btn htb-btn-primary">Xem phòng trống</Link>
+            <Link to={bookingLink} className="htb-btn htb-btn-primary">Xem phòng trống</Link>
           </div>
 
           <div className="hotel-rating-summary">
@@ -419,7 +425,7 @@ export default function HotelPage() {
         <section id="map-section" className="hotel-section">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <h2 className="hotel-section-title" style={{ marginBottom: 0 }}>Xung quanh khách sạn</h2>
-            <Link to="/register" className="htb-btn htb-btn-primary">Xem phòng trống</Link>
+            <Link to={bookingLink} className="htb-btn htb-btn-primary">Xem phòng trống</Link>
           </div>
           <p style={{ color: "#64748b", marginBottom: 20 }}>Khách thích khu vực này vì:</p>
 
@@ -454,19 +460,20 @@ export default function HotelPage() {
         </section>
       </div>
 
-      {/* Footer CTA */}
-      <div className="hotel-footer-cta">
-        <h2>Sẵn sàng trải nghiệm đẳng cấp 5 sao?</h2>
-        <p>Đặt phòng ngay hôm nay để nhận ưu đãi tốt nhất</p>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 20 }}>
-          <Link to="/register" className="htb-btn htb-btn-primary" style={{ padding: "14px 32px", fontSize: "1.05rem" }}>
-            Đăng ký & Đặt phòng
-          </Link>
-          <Link to="/login" className="htb-btn htb-btn-outline" style={{ padding: "14px 32px", fontSize: "1.05rem", color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}>
-            Đã có tài khoản
-          </Link>
+      {!embedded && (
+        <div className="hotel-footer-cta">
+          <h2>Sẵn sàng trải nghiệm đẳng cấp 5 sao?</h2>
+          <p>Đặt phòng ngay hôm nay để nhận ưu đãi tốt nhất</p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 20 }}>
+            <Link to="/register" className="htb-btn htb-btn-primary" style={{ padding: "14px 32px", fontSize: "1.05rem" }}>
+              Đăng ký & Đặt phòng
+            </Link>
+            <Link to="/login" className="htb-btn htb-btn-outline" style={{ padding: "14px 32px", fontSize: "1.05rem", color: "#fff", borderColor: "rgba(255,255,255,0.6)" }}>
+              Đã có tài khoản
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

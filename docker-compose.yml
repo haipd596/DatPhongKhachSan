@@ -19,5 +19,13 @@ services:
       timeout: 5s
       retries: 20
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: rex_booking_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   mysql_data:

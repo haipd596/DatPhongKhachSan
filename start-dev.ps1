@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "Khoi dong MySQL bang docker-compose..."
-docker compose up -d mysql
+Write-Host "Khoi dong MySQL va MailHog bang docker-compose..."
+docker compose up -d mysql mailhog
 
 Write-Host "Cho MySQL healthy..."
 for ($i = 0; $i -lt 30; $i++) {
@@ -13,5 +13,5 @@ for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep -Seconds 2
 }
 
-Write-Host "Chay FE + BE..."
+Write-Host "Chay FE + BE voi profile local..."
 npm run dev

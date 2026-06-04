@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
     try {
       const res = await client.post("/auth/forgot-password", { email });
       setMsg(res.data.message || "Đã gửi mã xác nhận. Vui lòng kiểm tra email.");
-      setTimeout(() => navigate(`/reset-password?email=${email}`), 2000);
+      setTimeout(() => navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`), 2000);
     } catch (err) {
       setError(
         err.response?.status === 429

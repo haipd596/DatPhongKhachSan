@@ -36,7 +36,7 @@ Hệ thống hỗ trợ khách hàng tìm phòng, giữ phòng, thanh toán mô 
 - Xác thực bằng JWT.
 - Seed dữ liệu demo tự động khi backend khởi động.
 - Tự động hết hạn các booking đang giữ quá thời gian.
-- Gửi email dạng mock logger mặc định, có thể cấu hình SMTP sau.
+- Gửi email qua MailHog khi chạy local, có thể cấu hình SMTP thật sau.
 - Hỗ trợ chạy development bằng MySQL Docker hoặc H2.
 - Hỗ trợ triển khai production bằng Docker Compose.
 
@@ -84,6 +84,8 @@ npm -v
 
 ### Database và Docker
 
+Docker chỉ bắt buộc nếu muốn chạy MySQL và MailHog bằng container. Nếu không có Docker, vẫn có thể chạy development bằng H2 local và Gmail SMTP thật.
+
 - Docker Desktop.
 - Docker Compose.
 
@@ -95,7 +97,7 @@ docker compose version
 docker info
 ```
 
-Nếu `docker info` báo lỗi, hãy mở Docker Desktop và chờ Docker chạy sẵn sàng.
+Nếu `docker info` báo lỗi, hãy mở Docker Desktop và chờ Docker chạy sẵn sàng. Nếu máy không có Docker, bỏ qua nhóm lệnh Docker và dùng mục "Chạy không cần Docker" bên dưới.
 
 ## Cấu hình mặc định
 
@@ -106,6 +108,8 @@ Nếu `docker info` báo lỗi, hãy mở Docker Desktop và chờ Docker chạy
 | Frontend development | `http://localhost:5173` |
 | Backend API | `http://localhost:8080` |
 | MySQL | `localhost:3306` |
+| MailHog web | `http://localhost:8025` |
+| MailHog SMTP | `localhost:1025` |
 | Frontend production Docker | `http://localhost` |
 
 ### Database MySQL development
@@ -147,6 +151,36 @@ Frontend hiện chưa có file `.env` mặc định. Code đang đọc các bi�
 
 Trong môi trường development, Vite proxy `/api` sang `http://localhost:8080`.
 
+### Email trong môi trường local
+
+- Backend local dùng profile `local`.
+- Mail được gửi qua MailHog chạy ở `localhost:1025`.
+- Hộp thư kiểm tra email mở tại `http://localhost:8025`.
+- Nếu MailHog chưa chạy, backend vẫn ghi log dự phòng và không làm hỏng request quên mật khẩu.
+- Cách này cần Docker vì MailHog chạy bằng `docker compose`.
+
+### Gửi email thật bằng Gmail SMTP
+
+Backend đọc cấu hình SMTP qua biến môi trường. Với Gmail, tài khoản gửi cần bật xác thực 2 bước và tạo App Password.
+
+```powershell
+$env:APP_MAIL_ENABLED="true"
+$env:APP_MAIL_FAIL_ON_ERROR="true"
+$env:MAIL_HOST="smtp.gmail.com"
+$env:MAIL_PORT="587"
+$env:MAIL_USERNAME="your-gmail@gmail.com"
+$env:MAIL_PASSWORD="your-gmail-app-password"
+$env:MAIL_FROM_ADDRESS="your-gmail@gmail.com"
+$env:MAIL_FROM_NAME="Quan Ly Ong Nuoc"
+$env:MAIL_SMTP_AUTH="true"
+$env:MAIL_STARTTLS_ENABLE="true"
+npm run dev:backend
+```
+
+Email quên mật khẩu gửi mã xác nhận. Email giữ phòng, xác nhận thanh toán và hủy phòng gửi kèm file PDF thông tin đặt phòng.
+
+Với Gmail SMTP, `MAIL_FROM_ADDRESS` nên trùng với tài khoản Gmail đang gửi hoặc là alias đã được Gmail xác minh. Không nên dùng địa chỉ không thuộc Gmail như `onboarding@resend.dev` khi gửi qua `smtp.gmail.com`.
+
 Nếu muốn tạo file môi trường frontend:
 
 ```powershell
@@ -182,9 +216,63 @@ npm --prefix frontend install
 
 Backend không cần cài thư viện thủ công. Maven sẽ tự tải dependency khi chạy backend.
 
-### Cách 1: Chạy nhanh bằng script
+### Cách 1: Chạy không cần Docker
 
-Lệnh này sẽ khởi động MySQL bằng Docker, chờ database sẵn sàng, sau đó chạy backend và frontend cùng lúc.
+Đây là cách khuyến nghị khi máy không có Docker. Backend dùng H2 file database tại `data/rexbooking` trong thư mục dự án và gửi mail thật qua Gmail SMTP.
+
+Nếu dùng file `.env.local` đã có sẵn trong repo, chạy một lệnh:
+
+```powershell
+npm run dev:no-docker
+```
+
+Mở PowerShell thứ nhất để chạy backend:
+
+```powershell
+$env:APP_MAIL_ENABLED="true"
+$env:APP_MAIL_FAIL_ON_ERROR="true"
+$env:MAIL_HOST="smtp.gmail.com"
+$env:MAIL_PORT="587"
+$env:MAIL_USERNAME="your-gmail@gmail.com"
+$env:MAIL_PASSWORD="your-gmail-app-password"
+$env:MAIL_FROM_ADDRESS="your-gmail@gmail.com"
+$env:MAIL_FROM_NAME="Quan Ly Ong Nuoc"
+
+mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local,h2
+```
+
+Mở PowerShell thứ hai để chạy frontend:
+
+```powershell
+npm --prefix frontend run dev
+```
+
+Truy cập frontend:
+
+```text
+http://localhost:5173
+```
+
+Thông tin H2:
+
+| Trường | Giá trị |
+| --- | --- |
+| JDBC URL | `jdbc:h2:file:./data/rexbooking` |
+| User | `sa` |
+| Password | để trống |
+| H2 console | `http://localhost:8080/h2-console` |
+
+Không dùng các lệnh sau nếu máy không có Docker:
+
+```powershell
+.\start-dev.ps1
+npm run db:up
+npm run db:down
+```
+
+### Cách 2: Chạy nhanh bằng script Docker
+
+Lệnh này sẽ khởi động MySQL và MailHog bằng Docker, chờ database sẵn sàng, sau đó chạy backend và frontend cùng lúc.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
@@ -196,7 +284,7 @@ Truy cập frontend:
 http://localhost:5173
 ```
 
-### Cách 2: Chạy thủ công
+### Cách 3: Chạy thủ công bằng Docker
 
 Khởi động MySQL:
 
@@ -210,6 +298,8 @@ Chạy backend:
 npm run dev:backend
 ```
 
+Backend dev sẽ tự dùng profile `local`, nên email sẽ đi qua MailHog nếu dịch vụ này đang chạy.
+
 Mở PowerShell khác và chạy frontend:
 
 ```powershell
@@ -221,23 +311,6 @@ Hoặc chạy backend và frontend cùng lúc:
 ```powershell
 npm run dev
 ```
-
-## Chạy backend bằng H2 không cần MySQL
-
-Nếu không muốn dùng Docker/MySQL, có thể chạy backend bằng H2:
-
-```powershell
-mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=h2
-```
-
-Thông tin H2:
-
-| Trường | Giá trị |
-| --- | --- |
-| JDBC URL | `jdbc:h2:file:./data/rexbooking` |
-| User | `sa` |
-| Password | để trống |
-| H2 console | `http://localhost:8080/h2-console` |
 
 ## Hướng dẫn chạy production bằng Docker
 
@@ -341,6 +414,22 @@ netstat -ano | findstr :3306
 
 Sau đó dừng MySQL khác hoặc đổi port trong `docker-compose.yml`.
 
+### Không thấy email quên mật khẩu
+
+Kiểm tra MailHog đang chạy:
+
+```powershell
+docker ps
+```
+
+Mở hộp thư dev:
+
+```text
+http://localhost:8025
+```
+
+Nếu MailHog chưa sẵn sàng, backend vẫn ghi lại nội dung email để bạn kiểm tra trong log.
+
 ### Backend không kết nối được database
 
 Kiểm tra container MySQL:
@@ -366,4 +455,3 @@ http://localhost:8080
 ```
 
 Trong development, frontend gọi `/api` và Vite proxy sang backend tại `http://localhost:8080`.
-

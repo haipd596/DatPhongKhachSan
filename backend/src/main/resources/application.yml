@@ -21,6 +21,22 @@ spring:
   web:
     resources:
       static-locations: classpath:/static/,file:uploads/
+  mail:
+    default-encoding: UTF-8
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    protocol: smtp
+    username: ${MAIL_USERNAME:${MAIL_USER:}}
+    password: ${MAIL_PASSWORD:${MAIL_PASS:}}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 app:
   jwt:
@@ -30,8 +46,9 @@ app:
     hold-minutes: 10
     expire-delay-ms: 60000
   mail:
-    enabled: false
-    from: noreply@rex.local
+    enabled: ${APP_MAIL_ENABLED:false}
+    fail-on-error: ${APP_MAIL_FAIL_ON_ERROR:false}
+    from: ${MAIL_FROM_ADDRESS:${MAIL_FROM:${MAIL_USERNAME:${MAIL_USER:noreply@rex.local}}}}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
   vnpay:

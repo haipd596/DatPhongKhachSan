@@ -46,6 +46,27 @@ export default function MyBookings() {
       .catch((err) => alert(err.response?.data?.message || "Không gửi được đánh giá"));
   };
 
+  const handleDownloadPdf = async (bookingId) => {
+    setProcessingId(bookingId);
+    try {
+      const res = await client.get(`/bookings/${bookingId}/pdf?purpose=Phiếu+xác+nhận+đặt+phòng`, {
+        responseType: "blob"
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `booking-${bookingId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.response?.data?.message || "Không tải được file PDF");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (loading) return <div className="loading-state card">Đang tải danh sách đặt phòng...</div>;
 
   return (
@@ -115,6 +136,9 @@ export default function MyBookings() {
                   Đánh giá dịch vụ
                 </button>
               )}
+              <button className="btn btn-outline" disabled={processingId === booking.id} onClick={() => handleDownloadPdf(booking.id)}>
+                {processingId === booking.id ? "Đang tải..." : "Bản in PDF"}
+              </button>
             </div>
           </article>
         ))}

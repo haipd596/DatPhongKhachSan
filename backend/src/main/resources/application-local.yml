@@ -1,0 +1,23 @@
+spring:
+  mail:
+    default-encoding: UTF-8
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    protocol: smtp
+    username: ${MAIL_USERNAME:${MAIL_USER:}}
+    password: ${MAIL_PASSWORD:${MAIL_PASS:}}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:false}
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+app:
+  mail:
+    enabled: ${APP_MAIL_ENABLED:true}
+    fail-on-error: ${APP_MAIL_FAIL_ON_ERROR:false}
+    from: ${MAIL_FROM_ADDRESS:${MAIL_FROM:${MAIL_USERNAME:${MAIL_USER:noreply@rex.local}}}}
