@@ -1,15 +1,15 @@
-package com.rexhotel.booking.user;
+package com.rexhotel.booking.user.dto;
 
 import java.time.LocalDate;
 
-public record CustomerSummaryResponse(
+public record UserProfileResponse(
     Long id,
-    String fullName,
     String email,
+    String fullName,
     String phone,
     String gender,
     LocalDate dateOfBirth,
     String avatarUrl,
     String vipLevel,
-    int bookingCount
+    Integer bookingCount
 ) {}

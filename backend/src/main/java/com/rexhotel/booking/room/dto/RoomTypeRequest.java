@@ -1,6 +1,7 @@
 package com.rexhotel.booking.room.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -20,7 +21,6 @@ public record RoomTypeRequest(
     Integer maxGuests,
 
     String description,
-
-    // FEATURE6: imageUrl tuy chon
-    String imageUrl
+    String imageUrl,
+    List<String> images  // Danh sách URL ảnh (URL nhập tay hoặc sau khi upload)
 ) {}

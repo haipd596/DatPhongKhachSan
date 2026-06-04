@@ -37,6 +37,18 @@ public class User {
     @Column(nullable = false, length = 20)
     private VipLevel vipLevel;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 10)
+    private String gender;
+
+    @Column
+    private java.time.LocalDate dateOfBirth;
+
+    @Column(length = 500)
+    private String avatarUrl;
+
     public User() {
     }
 
@@ -49,55 +61,25 @@ public class User {
         this.vipLevel = VipLevel.NORMAL;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    public String getFullName() {
-        return fullName;
-    }
-
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
-    public UserRole getRole() {
-        return role;
-    }
-
-    public void setRole(UserRole role) {
-        this.role = role;
-    }
-
-    public Integer getBookingCount() {
-        return bookingCount;
-    }
-
-    public void setBookingCount(Integer bookingCount) {
-        this.bookingCount = bookingCount;
-    }
-
-    public VipLevel getVipLevel() {
-        return vipLevel;
-    }
-
-    public void setVipLevel(VipLevel vipLevel) {
-        this.vipLevel = vipLevel;
-    }
+    public Long getId() { return id; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    public UserRole getRole() { return role; }
+    public void setRole(UserRole role) { this.role = role; }
+    public Integer getBookingCount() { return bookingCount; }
+    public void setBookingCount(Integer bookingCount) { this.bookingCount = bookingCount; }
+    public VipLevel getVipLevel() { return vipLevel; }
+    public void setVipLevel(VipLevel vipLevel) { this.vipLevel = vipLevel; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public java.time.LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(java.time.LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

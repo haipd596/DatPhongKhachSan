@@ -2,12 +2,17 @@ package com.rexhotel.booking.room;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rexhotel.booking.booking.BookingRepository;
 import com.rexhotel.booking.booking.BookingStatus;
 import com.rexhotel.booking.common.ApiException;
@@ -30,6 +35,7 @@ public class RoomService {
     private final RoomTypeRepository roomTypeRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RoomService(RoomTypeRepository roomTypeRepository, RoomRepository roomRepository, BookingRepository bookingRepository) {
         this.roomTypeRepository = roomTypeRepository;
@@ -45,6 +51,11 @@ public class RoomService {
         return roomRepository.findAll().stream().map(this::toRoomResponse).toList();
     }
 
+    public RoomResponse getRoomById(Long id) {
+        Room room = roomRepository.findById(id).orElseThrow(() -> new ApiException("Không tìm thấy phòng"));
+        return toRoomResponse(room);
+    }
+
     @Transactional
     public RoomTypeResponse createRoomType(RoomTypeRequest request) {
         if (roomTypeRepository.findByNameIgnoreCase(request.name().trim()).isPresent()) {
@@ -57,6 +68,7 @@ public class RoomService {
             request.description(),
             request.imageUrl()
         );
+        roomType.setImages(toJson(request.images()));
         roomTypeRepository.save(roomType);
         return toRoomTypeResponse(roomType);
     }
@@ -69,13 +81,13 @@ public class RoomService {
         roomType.setMaxGuests(request.maxGuests());
         roomType.setDescription(request.description());
         roomType.setImageUrl(request.imageUrl());
+        roomType.setImages(toJson(request.images()));
         roomTypeRepository.save(roomType);
         return toRoomTypeResponse(roomType);
     }
 
     @Transactional
     public void deleteRoomType(Long id) {
-        // BUG3: Kiem tra co phong nao dang su dung loai phong nay khong
         if (roomRepository.existsByRoomTypeId(id)) {
             throw new ApiException("Khong the xoa loai phong dang co phong su dung. Vui long xoa cac phong truoc.");
         }
@@ -91,6 +103,7 @@ public class RoomService {
             .orElseThrow(() -> new ApiException("Loai phong khong ton tai"));
         Room room = new Room(request.code().trim().toUpperCase(), request.floorNumber(), roomType);
         room.setStatus(parseRoomStatus(request.status()));
+        applyAmenities(room, request);
         roomRepository.save(room);
         return toRoomResponse(room);
     }
@@ -104,20 +117,19 @@ public class RoomService {
         room.setFloorNumber(request.floorNumber());
         room.setRoomType(roomType);
         room.setStatus(parseRoomStatus(request.status()));
+        applyAmenities(room, request);
         roomRepository.save(room);
         return toRoomResponse(room);
     }
 
     @Transactional
     public void deleteRoom(Long id) {
-        // BUG3: Kiem tra con booking active khong truoc khi xoa
         if (bookingRepository.existsByRoomIdAndStatusIn(id, ACTIVE_STATUSES)) {
             throw new ApiException("Khong the xoa phong dang co dat phong (HOLD/CONFIRMED/CHECKED_IN). Vui long xu ly cac booking truoc.");
         }
         roomRepository.deleteById(id);
     }
 
-    // FEATURE6: Tim phong kha dung voi filter nang cao
     public List<RoomResponse> getAvailableRooms(LocalDate checkIn, LocalDate checkOut,
                                                  Long roomTypeId, BigDecimal minPrice,
                                                  BigDecimal maxPrice, Integer maxGuests) {
@@ -156,18 +168,28 @@ public class RoomService {
         }
     }
 
-    private RoomTypeResponse toRoomTypeResponse(RoomType roomType) {
+    private void applyAmenities(Room room, RoomRequest request) {
+        if (request.hasTv() != null) room.setHasTv(request.hasTv());
+        if (request.hasWasher() != null) room.setHasWasher(request.hasWasher());
+        if (request.hasBalcony() != null) room.setHasBalcony(request.hasBalcony());
+        if (request.hasKitchen() != null) room.setHasKitchen(request.hasKitchen());
+        if (request.bedDouble() != null) room.setBedDouble(request.bedDouble());
+        if (request.bedSingle() != null) room.setBedSingle(request.bedSingle());
+    }
+
+    public RoomTypeResponse toRoomTypeResponse(RoomType roomType) {
         return new RoomTypeResponse(
             roomType.getId(),
             roomType.getName(),
             roomType.getBasePrice(),
             roomType.getMaxGuests(),
             roomType.getDescription(),
-            roomType.getImageUrl()
+            roomType.getImageUrl(),
+            fromJson(roomType.getImages())
         );
     }
 
-    private RoomResponse toRoomResponse(Room room) {
+    public RoomResponse toRoomResponse(Room room) {
         RoomType type = room.getRoomType();
         return new RoomResponse(
             room.getId(),
@@ -178,7 +200,15 @@ public class RoomService {
             type.getName(),
             type.getBasePrice(),
             type.getMaxGuests(),
-            type.getImageUrl()
+            type.getImageUrl(),
+            fromJson(type.getImages()),
+            type.getDescription(),
+            room.isHasTv(),
+            room.isHasWasher(),
+            room.isHasBalcony(),
+            room.isHasKitchen(),
+            room.getBedDouble(),
+            room.getBedSingle()
         );
     }
 
@@ -187,6 +217,24 @@ public class RoomService {
             return RoomStatus.valueOf(value.toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new ApiException("Trang thai phong khong hop le. Chap nhan: AVAILABLE, MAINTENANCE");
+        }
+    }
+
+    private String toJson(List<String> list) {
+        if (list == null || list.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private List<String> fromJson(String json) {
+        if (json == null || json.isBlank()) return Collections.emptyList();
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            return Collections.emptyList();
         }
     }
 }

@@ -38,7 +38,10 @@ export default function MainLayout() {
             Đặt phòng của tôi
           </NavLink>
           <NavLink to="/customer/history" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
-            Thanh toán
+            Lịch sử thanh toán
+          </NavLink>
+          <NavLink to="/customer/profile" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+            👤 Hồ sơ
           </NavLink>
           <button className="btn btn-outline" onClick={handleLogout}>Đăng xuất</button>
         </nav>

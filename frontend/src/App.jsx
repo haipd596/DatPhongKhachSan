@@ -6,20 +6,25 @@ import AuthLayout from "./layouts/AuthLayout";
 import MainLayout from "./layouts/MainLayout";
 import ManagerLayout from "./layouts/ManagerLayout";
 
+// Public Pages
+import HotelPage from "./pages/HotelPage";
+
 // Auth Pages
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 
-// Customer Pages (Placeholders temporarily until rewrited)
+// Customer Pages
 import HomePage from "./pages/customer/Home";
 import RoomSearchPage from "./pages/customer/RoomSearch";
 import MyBookingsPage from "./pages/customer/MyBookings";
+import PaymentPage from "./pages/customer/PaymentPage";
 import PaymentResultPage from "./pages/customer/PaymentResult";
 import PaymentHistoryPage from "./pages/customer/PaymentHistory";
+import ProfilePage from "./pages/customer/ProfilePage";
 
-// Manager Pages (Placeholders temporarily until rewrited)
+// Manager Pages
 import DashboardPage from "./pages/manager/Dashboard";
 import RoomManagerPage from "./pages/manager/RoomManager";
 import BookingManagerPage from "./pages/manager/BookingManager";
@@ -28,7 +33,7 @@ import CustomerManagerPage from "./pages/manager/CustomerManager";
 function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/hotel" replace />;
   if (user.role === "MANAGER") return <Navigate to="/manager/dashboard" replace />;
   return <Navigate to="/customer/home" replace />;
 }
@@ -38,6 +43,9 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/" element={<RootRedirect />} />
+
+        {/* Public Route */}
+        <Route path="/hotel" element={<HotelPage />} />
 
         {/* Auth Routes */}
         <Route element={<AuthLayout />}>
@@ -52,7 +60,9 @@ export default function App() {
           <Route path="home" element={<HomePage />} />
           <Route path="search" element={<RoomSearchPage />} />
           <Route path="bookings" element={<MyBookingsPage />} />
+          <Route path="payment/:bookingId" element={<PaymentPage />} />
           <Route path="history" element={<PaymentHistoryPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
         {/* Payment Callback doesn't necessarily need the main layout if it's a redirect screen, but it can use it */}
         <Route path="/payment/result" element={<PaymentResultPage />} />

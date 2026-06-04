@@ -45,6 +45,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/actuator/health").permitAll()
                 .requestMatchers("/api/payments/vnpay/sandbox", "/api/payments/vnpay/callback").permitAll()
+                .requestMatchers("/api/rooms", "/api/rooms/**", "/api/hotel/**").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/manager/**").hasRole("MANAGER")
                 .anyRequest().authenticated()
             )

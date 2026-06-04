@@ -41,6 +41,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.myBookings(principal.getName()));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BookingResponse> getBooking(@PathVariable("id") Long id, Principal principal) {
+        return ResponseEntity.ok(bookingService.toResponse(bookingService.getOwnedBooking(id, principal.getName())));
+    }
+
     @PostMapping("/{id}/cancel")
     public ResponseEntity<BookingResponse> cancel(@PathVariable("id") Long id, Principal principal) {
         return ResponseEntity.ok(bookingService.cancel(id, principal.getName()));

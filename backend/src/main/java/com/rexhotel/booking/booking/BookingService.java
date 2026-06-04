@@ -64,22 +64,22 @@ public class BookingService {
         LocalDate checkIn = request.checkInDate();
         LocalDate checkOut = request.checkOutDate();
         if (checkIn == null || checkOut == null || !checkIn.isBefore(checkOut)) {
-            throw new ApiException("Ngay nhan/tra phong khong hop le");
+            throw new ApiException("Ngày nhận/trả phòng không hợp lệ");
         }
         if (checkIn.isBefore(LocalDate.now())) {
-            throw new ApiException("Khong the dat phong trong qua khu");
+            throw new ApiException("Không thể đặt phòng trong quá khứ");
         }
 
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ApiException("Khong tim thay user"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy người dùng"));
             
         // BÀI TOÁN 4: Chống Race Condition Double Booking bằng Pessimistic Write Lock
         // Dùng locking trực tiếp tại CSDL để ngăn chặn 2 thread đọc/ghi cùng lúc vào 1 phòng
         Room room = roomRepository.findByIdForUpdate(request.roomId())
-            .orElseThrow(() -> new ApiException("Khong tim thay phong"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy phòng"));
             
         if (room.getStatus() != RoomStatus.AVAILABLE) {
-            throw new ApiException("Phong dang bao tri hoac khong kha dung");
+            throw new ApiException("Phòng đang bảo trì hoặc không khả dụng");
         }
         
         // BÀI TOÁN 6: Kiểm tra sức chứa tối đa của phòng
@@ -90,7 +90,7 @@ public class BookingService {
 
         long overlapping = bookingRepository.countOverlapping(room.getId(), BLOCKING_STATUSES, checkIn, checkOut);
         if (overlapping > 0) {
-            throw new ApiException("Phong da duoc dat hoac dang giu o khung thoi gian nay");
+            throw new ApiException("Phòng đã được đặt hoặc đang giữ ở khung thời gian này");
         }
 
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
@@ -101,8 +101,22 @@ public class BookingService {
         BigDecimal vatAmount = discountedPrice.multiply(new BigDecimal("0.10")); // 10% VAT
         BigDecimal total = discountedPrice.add(vatAmount);
 
+        // Tính phí dịch vụ bổ sung
+        boolean hasBreakfast = Boolean.TRUE.equals(request.hasBreakfast());
+        boolean hasTransfer = Boolean.TRUE.equals(request.hasTransfer());
+        boolean hasPetCare = Boolean.TRUE.equals(request.hasPetCare());
+        BigDecimal extraFee = BigDecimal.ZERO;
+        if (hasBreakfast) extraFee = extraFee.add(new BigDecimal("150000").multiply(BigDecimal.valueOf(nights)));
+        if (hasTransfer)  extraFee = extraFee.add(new BigDecimal("300000"));
+        if (hasPetCare)   extraFee = extraFee.add(new BigDecimal("100000").multiply(BigDecimal.valueOf(nights)));
+        total = total.add(extraFee);
+
         Booking booking = new Booking(user, room, checkIn, checkOut, BookingStatus.HOLD, total);
         booking.setHoldExpiresAt(LocalDateTime.now().plusMinutes(holdMinutes));
+        booking.setHasBreakfast(hasBreakfast);
+        booking.setHasTransfer(hasTransfer);
+        booking.setHasPetCare(hasPetCare);
+        booking.setExtraFee(extraFee);
         bookingRepository.save(booking);
         bookingNotificationService.sendHoldConfirmation(booking);
         return toResponse(booking);
@@ -115,25 +129,25 @@ public class BookingService {
 
     public Booking getOwnedBooking(Long bookingId, String email) {
         return bookingRepository.findByIdAndUserEmail(bookingId, email)
-            .orElseThrow(() -> new ApiException("Khong tim thay booking"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy đặt phòng"));
     }
 
     public Booking getBookingById(Long bookingId) {
         return bookingRepository.findById(bookingId)
-            .orElseThrow(() -> new ApiException("Khong tim thay booking"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy đặt phòng"));
     }
 
     @Transactional
     public BookingResponse cancel(Long bookingId, String email) {
         Booking booking = bookingRepository.findByIdAndUserEmail(bookingId, email)
-            .orElseThrow(() -> new ApiException("Khong tim thay booking"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy đặt phòng"));
 
         BookingStatus status = booking.getStatus();
         if (status == BookingStatus.CANCELLED || status == BookingStatus.EXPIRED) {
-            throw new ApiException("Booking da o trang thai huy/het han");
+            throw new ApiException("Đặt phòng đã ở trạng thái hủy/hết hạn");
         }
         if (status == BookingStatus.CHECKED_IN || status == BookingStatus.CHECKED_OUT) {
-            throw new ApiException("Khong the huy booking khi khach da check-in");
+            throw new ApiException("Không thể hủy đặt phòng khi khách đã check-in");
         }
 
         // FEATURE3 + BUG4: Neu da CONFIRMED thi tinh hoan tien + giam bookingCount
@@ -164,15 +178,15 @@ public class BookingService {
     @Transactional
     public Booking confirmPaymentSuccess(Long bookingId, String email) {
         Booking booking = bookingRepository.findByIdAndUserEmail(bookingId, email)
-            .orElseThrow(() -> new ApiException("Khong tim thay booking"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy đặt phòng"));
         if (booking.getStatus() != BookingStatus.HOLD) {
-            throw new ApiException("Booking khong o trang thai cho thanh toan");
+            throw new ApiException("Đặt phòng không ở trạng thái chờ thanh toán");
         }
         if (booking.getHoldExpiresAt() != null && booking.getHoldExpiresAt().isBefore(LocalDateTime.now())) {
             booking.setStatus(BookingStatus.EXPIRED);
             booking.setHoldExpiresAt(null);
             bookingRepository.save(booking);
-            throw new ApiException("Booking da het thoi gian giu phong");
+            throw new ApiException("Đặt phòng đã hết thời gian giữ phòng");
         }
         booking.setStatus(BookingStatus.CONFIRMED);
         booking.setHoldExpiresAt(null);
@@ -231,15 +245,21 @@ public class BookingService {
     public BookingResponse toResponseWithRefund(Booking booking, BigDecimal refundAmount) {
         return new BookingResponse(
             booking.getId(),
+            booking.getRoom().getId(),
             booking.getRoom().getCode(),
             booking.getRoom().getRoomType().getName(),
+            booking.getRoom().getRoomType().getBasePrice(),
             booking.getCheckInDate(),
             booking.getCheckOutDate(),
             booking.getStatus().name(),
             booking.getTotalAmount(),
             refundAmount,
             booking.getHoldExpiresAt(),
-            booking.getCreatedAt()
+            booking.getCreatedAt(),
+            booking.isHasBreakfast(),
+            booking.isHasTransfer(),
+            booking.isHasPetCare(),
+            booking.getExtraFee()
         );
     }
 }

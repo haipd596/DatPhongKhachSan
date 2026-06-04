@@ -91,11 +91,16 @@ public class ManagerBookingController {
     public ResponseEntity<Page<CustomerSummaryResponse>> getCustomers(Pageable pageable) {
         Page<CustomerSummaryResponse> result = userRepository
             .findByRoleOrderByBookingCountDesc(UserRole.CUSTOMER, pageable)
-            .map(u -> new CustomerSummaryResponse(
-                u.getId(), u.getFullName(), u.getEmail(),
-                u.getVipLevel().name(), u.getBookingCount()
-            ));
+            .map(this::toCustomerSummaryResponse);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/customers/{id}")
+    public ResponseEntity<CustomerSummaryResponse> getCustomer(@PathVariable Long id) {
+        return ResponseEntity.ok(userRepository.findById(id)
+            .filter(u -> u.getRole() == UserRole.CUSTOMER)
+            .map(this::toCustomerSummaryResponse)
+            .orElseThrow(() -> new com.rexhotel.booking.common.ApiException("Không tìm thấy khách hàng")));
     }
 
     /**
@@ -134,6 +139,20 @@ public class ManagerBookingController {
             b.getTotalAmount(),
             null,
             b.getCreatedAt()
+        );
+    }
+
+    private CustomerSummaryResponse toCustomerSummaryResponse(com.rexhotel.booking.user.User user) {
+        return new CustomerSummaryResponse(
+            user.getId(),
+            user.getFullName(),
+            user.getEmail(),
+            user.getPhone(),
+            user.getGender(),
+            user.getDateOfBirth(),
+            user.getAvatarUrl(),
+            user.getVipLevel().name(),
+            user.getBookingCount()
         );
     }
 }

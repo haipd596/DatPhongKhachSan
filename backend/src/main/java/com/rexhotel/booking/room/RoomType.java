@@ -26,12 +26,15 @@ public class RoomType {
     @Column(nullable = false)
     private Integer maxGuests;
 
-    @Column(length = 500)
+    @Column(length = 1000)
     private String description;
 
-    // FEATURE6: Them anh dai dien cho loai phong
     @Column(length = 500)
     private String imageUrl;
+
+    // JSON array of image URLs, stored as TEXT: ["url1","url2",...]
+    @Column(columnDefinition = "TEXT")
+    private String images;
 
     public RoomType() {}
 
@@ -54,4 +57,6 @@ public class RoomType {
     public void setDescription(String description) { this.description = description; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getImages() { return images; }
+    public void setImages(String images) { this.images = images; }
 }

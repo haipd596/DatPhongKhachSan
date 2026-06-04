@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import client from "../../api/client";
 import { format } from "date-fns";
 
@@ -19,17 +20,6 @@ export default function MyBookings() {
   useEffect(() => {
     fetchBookings();
   }, []);
-
-  const handleVNPay = async (bookingId) => {
-    setProcessingId(bookingId);
-    try {
-      const res = await client.post("/payments/vnpay/create", { bookingId });
-      window.location.href = res.data.paymentUrl;
-    } catch (err) {
-      alert(err.response?.data?.message || "Không tạo được giao dịch thanh toán");
-      setProcessingId(null);
-    }
-  };
 
   const handleCancel = async (bookingId) => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đặt phòng này? Chính sách hoàn tiền sẽ được áp dụng.")) return;
@@ -90,6 +80,16 @@ export default function MyBookings() {
               </div>
             </div>
 
+            {/* Dịch vụ bổ sung */}
+            {(booking.hasBreakfast || booking.hasTransfer || booking.hasPetCare) && (
+              <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {booking.hasBreakfast && <span style={{ background: "#fef3c7", color: "#92400e", borderRadius: 999, padding: "3px 10px", fontSize: "0.82rem", fontWeight: 600 }}>🍳 Buffet sáng</span>}
+                {booking.hasTransfer && <span style={{ background: "#dbeafe", color: "#1e40af", borderRadius: 999, padding: "3px 10px", fontSize: "0.82rem", fontWeight: 600 }}>🚗 Xe đưa đón</span>}
+                {booking.hasPetCare && <span style={{ background: "#f0fdf4", color: "#166534", borderRadius: 999, padding: "3px 10px", fontSize: "0.82rem", fontWeight: 600 }}>🐾 Thú cưng</span>}
+                {booking.extraFee > 0 && <span style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>(Phí DV: +{currency.format(booking.extraFee)} VNĐ)</span>}
+              </div>
+            )}
+
             {booking.status === "CANCELLED" && booking.refundAmount > 0 && (
               <div className="alert alert-success" style={{ marginTop: 18, marginBottom: 0 }}>
                 Số tiền hoàn dự kiến: {currency.format(booking.refundAmount)} VNĐ.
@@ -99,9 +99,7 @@ export default function MyBookings() {
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 20 }}>
               {booking.status === "HOLD" && (
                 <>
-                  <button className="btn" disabled={processingId === booking.id} onClick={() => handleVNPay(booking.id)}>
-                    Thanh toán VNPay
-                  </button>
+                  <Link className="btn" to={`/customer/payment/${booking.id}`}>Thanh toán</Link>
                   <button className="btn btn-outline btn-danger" disabled={processingId === booking.id} onClick={() => handleCancel(booking.id)}>
                     Hủy đặt phòng
                   </button>

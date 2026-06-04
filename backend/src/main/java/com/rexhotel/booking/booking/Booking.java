@@ -52,8 +52,20 @@ public class Booking {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    public Booking() {
-    }
+    // Dịch vụ bổ sung
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean hasBreakfast = false;   // Buffet sáng
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean hasTransfer = false;    // Xe đưa đón
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean hasPetCare = false;     // Chăm sóc thú cưng
+
+    @Column(precision = 14, scale = 2)
+    private BigDecimal extraFee = BigDecimal.ZERO;  // Tổng phí dịch vụ bổ sung
+
+    public Booking() {}
 
     public Booking(User user, Room room, LocalDate checkInDate, LocalDate checkOutDate, BookingStatus status, BigDecimal totalAmount) {
         this.user = user;
@@ -65,71 +77,29 @@ public class Booking {
         this.createdAt = LocalDateTime.now();
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Room getRoom() {
-        return room;
-    }
-
-    public void setRoom(Room room) {
-        this.room = room;
-    }
-
-    public LocalDate getCheckInDate() {
-        return checkInDate;
-    }
-
-    public void setCheckInDate(LocalDate checkInDate) {
-        this.checkInDate = checkInDate;
-    }
-
-    public LocalDate getCheckOutDate() {
-        return checkOutDate;
-    }
-
-    public void setCheckOutDate(LocalDate checkOutDate) {
-        this.checkOutDate = checkOutDate;
-    }
-
-    public BookingStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(BookingStatus status) {
-        this.status = status;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public LocalDateTime getHoldExpiresAt() {
-        return holdExpiresAt;
-    }
-
-    public void setHoldExpiresAt(LocalDateTime holdExpiresAt) {
-        this.holdExpiresAt = holdExpiresAt;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
+    public Long getId() { return id; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public Room getRoom() { return room; }
+    public void setRoom(Room room) { this.room = room; }
+    public LocalDate getCheckInDate() { return checkInDate; }
+    public void setCheckInDate(LocalDate checkInDate) { this.checkInDate = checkInDate; }
+    public LocalDate getCheckOutDate() { return checkOutDate; }
+    public void setCheckOutDate(LocalDate checkOutDate) { this.checkOutDate = checkOutDate; }
+    public BookingStatus getStatus() { return status; }
+    public void setStatus(BookingStatus status) { this.status = status; }
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+    public LocalDateTime getHoldExpiresAt() { return holdExpiresAt; }
+    public void setHoldExpiresAt(LocalDateTime holdExpiresAt) { this.holdExpiresAt = holdExpiresAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public boolean isHasBreakfast() { return hasBreakfast; }
+    public void setHasBreakfast(boolean hasBreakfast) { this.hasBreakfast = hasBreakfast; }
+    public boolean isHasTransfer() { return hasTransfer; }
+    public void setHasTransfer(boolean hasTransfer) { this.hasTransfer = hasTransfer; }
+    public boolean isHasPetCare() { return hasPetCare; }
+    public void setHasPetCare(boolean hasPetCare) { this.hasPetCare = hasPetCare; }
+    public BigDecimal getExtraFee() { return extraFee != null ? extraFee : BigDecimal.ZERO; }
+    public void setExtraFee(BigDecimal extraFee) { this.extraFee = extraFee; }
 }

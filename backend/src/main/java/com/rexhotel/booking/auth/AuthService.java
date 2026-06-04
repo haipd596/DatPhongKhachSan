@@ -57,7 +57,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = request.email().toLowerCase().trim();
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new ApiException("Email da ton tai");
+            throw new ApiException("Email đã tồn tại");
         }
         User user = new User(
             email,
@@ -74,7 +74,7 @@ public class AuthService {
         String email = request.email().toLowerCase().trim();
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ApiException("Sai thong tin dang nhap"));
+            .orElseThrow(() -> new ApiException("Sai thông tin đăng nhập"));
         // Xoa cac refresh token cu cua user
         refreshTokenRepository.revokeAllByUser(user);
         RefreshToken refreshToken = new RefreshToken(user);
@@ -87,10 +87,10 @@ public class AuthService {
         String email = request.email().toLowerCase().trim();
         // BUG7: Rate limit - max 3 lan/phut per email
         if (!rateLimitService.tryAcquire("forgot:" + email, 3, 60)) {
-            throw new ApiException("Qua nhieu yeu cau. Vui long thu lai sau 1 phut.");
+            throw new ApiException("Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.");
         }
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ApiException("Email khong ton tai"));
+            .orElseThrow(() -> new ApiException("Email không tồn tại"));
         // BUG1: Dung SecureRandom thay Random
         String code = String.valueOf(100000 + secureRandom.nextInt(900000));
         PasswordResetToken token = new PasswordResetToken(code, user, LocalDateTime.now().plusMinutes(15));
@@ -102,9 +102,9 @@ public class AuthService {
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         PasswordResetToken token = tokenRepository.findTopByCodeAndUsedFalseOrderByIdDesc(request.code())
-            .orElseThrow(() -> new ApiException("Ma xac nhan khong hop le hoac da duoc su dung"));
+            .orElseThrow(() -> new ApiException("Mã xác nhận không hợp lệ hoặc đã được sử dụng"));
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new ApiException("Ma xac nhan da het han (15 phut)");
+            throw new ApiException("Mã xác nhận đã hết hạn (15 phút)");
         }
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
@@ -116,11 +116,11 @@ public class AuthService {
     @Transactional
     public AuthResponse refresh(String refreshTokenValue) {
         RefreshToken rt = refreshTokenRepository.findByTokenAndRevokedFalse(refreshTokenValue)
-            .orElseThrow(() -> new ApiException("Refresh token khong hop le hoac da het han"));
+            .orElseThrow(() -> new ApiException("Refresh token không hợp lệ hoặc đã hết hạn"));
         if (rt.getExpiresAt().isBefore(LocalDateTime.now())) {
             rt.setRevoked(true);
             refreshTokenRepository.save(rt);
-            throw new ApiException("Refresh token da het han. Vui long dang nhap lai.");
+            throw new ApiException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
         }
         User user = rt.getUser();
         // Issue refresh token moi (rotation)
@@ -142,7 +142,7 @@ public class AuthService {
 
     public AuthResponse me(String email) {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new ApiException("Khong tim thay nguoi dung"));
+            .orElseThrow(() -> new ApiException("Không tìm thấy người dùng"));
         return toAuthResponse(user, null);
     }
 

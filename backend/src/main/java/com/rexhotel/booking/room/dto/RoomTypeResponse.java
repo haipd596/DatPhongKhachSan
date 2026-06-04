@@ -1,6 +1,7 @@
 package com.rexhotel.booking.room.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record RoomTypeResponse(
     Long id,
@@ -8,5 +9,6 @@ public record RoomTypeResponse(
     BigDecimal basePrice,
     Integer maxGuests,
     String description,
-    String imageUrl
+    String imageUrl,
+    List<String> images
 ) {}

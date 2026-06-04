@@ -49,9 +49,9 @@ public class PaymentService {
     public Map<String, String> initiateVnpay(Long bookingId, String email) {
         Booking booking = bookingService.getOwnedBooking(bookingId, email);
         if (!booking.getStatus().name().equals("HOLD")) {
-            throw new ApiException("Chi co the thanh toan booking o trang thai HOLD");
+            throw new ApiException("Chỉ có thể thanh toán đặt phòng ở trạng thái HOLD");
         }
-        String orderInfo = "Dat phong " + booking.getRoom().getCode() + " #" + bookingId;
+        String orderInfo = "Đặt phòng " + booking.getRoom().getCode() + " #" + bookingId;
         Map<String, String> result = vnpayMockService.createPaymentUrl(bookingId, booking.getTotalAmount(), orderInfo);
 
         // Luu giao dich PENDING
@@ -68,11 +68,11 @@ public class PaymentService {
     public BookingResponse processVnpayCallback(Map<String, String> params) {
         String txnRef = vnpayMockService.extractTxnRef(params);
         if (txnRef == null) {
-            throw new ApiException("Thieu thong tin giao dich (vnp_TxnRef)");
+            throw new ApiException("Thiếu thông tin giao dịch (vnp_TxnRef)");
         }
 
         PaymentTransaction tx = paymentTransactionRepository.findByTransactionCode(txnRef)
-            .orElseThrow(() -> new ApiException("Khong tim thay giao dich: " + txnRef));
+            .orElseThrow(() -> new ApiException("Không tìm thấy giao dịch: " + txnRef));
 
         boolean success = vnpayMockService.verifyCallback(params);
         Booking booking = tx.getBooking();

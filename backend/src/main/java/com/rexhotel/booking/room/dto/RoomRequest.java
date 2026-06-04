@@ -1,5 +1,7 @@
 package com.rexhotel.booking.room.dto;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,6 +20,13 @@ public record RoomRequest(
     Long roomTypeId,
 
     @NotBlank(message = "Trạng thái phòng không được để trống")
-    String status
-) {
-}
+    String status,
+
+    // Tiện nghi
+    Boolean hasTv,
+    Boolean hasWasher,
+    Boolean hasBalcony,
+    Boolean hasKitchen,
+    Integer bedDouble,
+    Integer bedSingle
+) {}

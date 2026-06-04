@@ -41,13 +41,13 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<Map<String, String>> forgotPassword(@Validated @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request);
-        return ResponseEntity.ok(Map.of("message", "Ma xac nhan da duoc gui den email cua ban"));
+        return ResponseEntity.ok(Map.of("message", "Mã xác nhận đã được gửi đến email của bạn"));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<Map<String, String>> resetPassword(@Validated @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request);
-        return ResponseEntity.ok(Map.of("message", "Doi mat khau thanh cong"));
+        return ResponseEntity.ok(Map.of("message", "Đổi mật khẩu thành công"));
     }
 
     @PostMapping("/refresh")
@@ -58,7 +58,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(@Validated @RequestBody RefreshTokenRequest request) {
         authService.logout(request.refreshToken());
-        return ResponseEntity.ok(Map.of("message", "Dang xuat thanh cong"));
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
 
     @GetMapping("/me")

@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,13 +31,14 @@ public class RoomController {
         return ResponseEntity.ok(roomService.getAllRoomTypes());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long id) {
+        return ResponseEntity.ok(roomService.getRoomById(id));
+    }
+
     /**
      * GET /api/rooms
-     * FEATURE6: Filter nang cao:
-     *   checkIn, checkOut     — loc phong trong khung thoi gian
-     *   roomTypeId            — loc theo loai phong
-     *   minPrice, maxPrice    — khoang gia/dem
-     *   maxGuests             — so khach toi thieu can phong
+     * Filter: checkIn, checkOut, roomTypeId, minPrice, maxPrice, maxGuests
      */
     @GetMapping
     public ResponseEntity<List<RoomResponse>> getRooms(
