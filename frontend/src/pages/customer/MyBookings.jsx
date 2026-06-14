@@ -12,7 +12,7 @@ export default function MyBookings() {
 
   const fetchBookings = () => {
     setLoading(true);
-    client.get("/bookings/me")
+    client.get("/bookings/my")
       .then((res) => setBookings(res.data))
       .finally(() => setLoading(false));
   };

@@ -84,15 +84,45 @@ public class BookingPdfService {
         }
     }
 
+    private BaseFont loadFont(String resourcePath) throws Exception {
+        // Đọc font từ classpath resources (thường dùng khi chạy trong file JAR/Docker)
+        try (java.io.InputStream is = getClass().getResourceAsStream(resourcePath)) {
+            if (is == null) {
+                throw new java.io.FileNotFoundException("Không tìm thấy font resource: " + resourcePath);
+            }
+            byte[] fontBytes = is.readAllBytes();
+            return BaseFont.createFont(resourcePath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED, BaseFont.CACHED, fontBytes, null);
+        }
+    }
+
     private FontSet createFonts() throws Exception {
-        BaseFont baseFont = BaseFont.createFont(resolveFontPath(), BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-        return new FontSet(
-            new Font(baseFont, 18, Font.BOLD),
-            new Font(baseFont, 13, Font.BOLD),
-            new Font(baseFont, 12, Font.BOLD),
-            new Font(baseFont, 10, Font.NORMAL),
-            new Font(baseFont, 10, Font.BOLD)
-        );
+        try {
+            // Ưu tiên nạp font Roboto từ resources đã đóng gói trong ứng dụng
+            BaseFont regularBase = loadFont("/fonts/Roboto-Regular.ttf");
+            BaseFont boldBase = loadFont("/fonts/Roboto-Bold.ttf");
+            return new FontSet(
+                new Font(boldBase, 18, Font.NORMAL),
+                new Font(boldBase, 13, Font.NORMAL),
+                new Font(boldBase, 12, Font.NORMAL),
+                new Font(regularBase, 10, Font.NORMAL),
+                new Font(boldBase, 10, Font.NORMAL)
+            );
+        } catch (Exception e) {
+            // Dự phòng: nạp font hệ thống nếu không nạp được từ resources
+            String fontPath = resolveFontPath();
+            String encoding = BaseFont.IDENTITY_H;
+            if (BaseFont.HELVETICA.equals(fontPath)) {
+                encoding = BaseFont.CP1252;
+            }
+            BaseFont fallbackBase = BaseFont.createFont(fontPath, encoding, BaseFont.EMBEDDED);
+            return new FontSet(
+                new Font(fallbackBase, 18, Font.BOLD),
+                new Font(fallbackBase, 13, Font.BOLD),
+                new Font(fallbackBase, 12, Font.BOLD),
+                new Font(fallbackBase, 10, Font.NORMAL),
+                new Font(fallbackBase, 10, Font.BOLD)
+            );
+        }
     }
 
     private String resolveFontPath() {
