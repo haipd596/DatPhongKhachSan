@@ -1,0 +1,18 @@
+1. Tích hợp Trí tuệ nhân tạo (Google Gemini AI - Trợ lý ảo thông minh)
+Điểm đặc biệt (Function Calling): Chatbot không chỉ trả lời văn bản thông thường mà còn được tích hợp trực tiếp với cơ sở dữ liệu của hệ thống:
+
+2. Tích hợp Xuất hóa đơn/Phiếu đặt phòng PDF động
+Tự động tạo file PDF đính kèm email hoặc cho phép tải trực tiếp từ giao diện.
+
+3. Tích hợp Gửi Email tự động (Mail Engine)
+Gửi mã OTP xác nhận khi khách hàng yêu cầu khôi phục mật khẩu.
+Tự động gửi email xác nhận đặt phòng (kèm file PDF hóa đơn) ngay sau khi thanh toán thành công.
+
+4. Tích hợp Cổng thanh toán mô phỏng (VNPay Mock)
+Tích hợp luồng giao dịch bảo mật mô phỏng quy trình của cổng thanh toán VNPay thực tế.
+
+5. Cơ chế Tự động hủy phòng giữ quá hạn 
+tự động giải phóng phòng để khách hàng khác có thể đặt, tránh tình trạng giam giữ phòng ảo.
+
+6. Cơ chế phân hạng thành viên VIP tự động
+Tích hợp thuật toán tự động tính toán tổng chi tiêu tích lũy của khách hàng.

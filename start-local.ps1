@@ -1,5 +1,11 @@
 $ErrorActionPreference = "Stop"
 
+# Thêm đường dẫn Maven từ IntelliJ vào PATH
+$intellijMaven = "C:\Program Files\JetBrains\IntelliJ IDEA 2026.1\plugins\maven\lib\maven3\bin"
+if (Test-Path $intellijMaven) {
+  $env:PATH = "$intellijMaven;$env:PATH"
+}
+
 $envFile = Join-Path $PSScriptRoot ".env.local"
 
 if (-not (Test-Path $envFile)) {
