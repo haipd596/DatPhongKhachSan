@@ -1,9 +1,14 @@
 $ErrorActionPreference = "Stop"
 
-# Thêm đường dẫn Maven từ IntelliJ vào PATH
-$intellijMaven = "C:\Program Files\JetBrains\IntelliJ IDEA 2026.1\plugins\maven\lib\maven3\bin"
-if (Test-Path $intellijMaven) {
-  $env:PATH = "$intellijMaven;$env:PATH"
+# Xác định lệnh chạy Maven (ưu tiên mvn toàn cục, sau đó tới IntelliJ và Maven Wrapper)
+$mvnCmd = "mvn"
+if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
+  $intellijMaven = "C:\Program Files\JetBrains\IntelliJ IDEA 2026.1\plugins\maven\lib\maven3\bin"
+  if (Test-Path $intellijMaven) {
+    $env:PATH = "$intellijMaven;$env:PATH"
+  } elseif (Test-Path (Join-Path $PSScriptRoot "backend\mvnw.cmd")) {
+    $mvnCmd = "backend\mvnw.cmd"
+  }
 }
 
 $envFile = Join-Path $PSScriptRoot ".env.local"
@@ -31,5 +36,5 @@ Get-Content $envFile | ForEach-Object {
   }
 }
 
-Write-Host "Chạy backend H2 + frontend, không cần Docker..."
-npx concurrently -k -n BE,FE -c yellow,cyan "mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local,h2" "npm --prefix frontend run dev"
+Write-Host "Chạy backend MySQL local + frontend, không cần Docker..."
+npx concurrently -k -n BE,FE -c yellow,cyan "java -jar backend/target/booking-backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=local" "npm --prefix frontend run dev"
