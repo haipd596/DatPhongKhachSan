@@ -22,4 +22,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
           and b.status = com.rexhotel.booking.booking.BookingStatus.CHECKED_OUT
     """)
     boolean existsByUserEmailAndHasCheckedOut(@Param("email") String email);
+
+    long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

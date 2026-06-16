@@ -96,4 +96,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // FEATURE4: Thong ke booking theo status
     @Query("select b.status, count(b) from Booking b group by b.status")
     List<Object[]> countGroupByStatus();
+
+    long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    long countByStatusAndCreatedAtBetween(BookingStatus status, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    @Query("""
+        select coalesce(sum(b.totalAmount), 0)
+        from Booking b
+        where b.status in :statuses
+          and b.createdAt >= :start
+          and b.createdAt <= :end
+    """)
+    java.math.BigDecimal sumTotalAmountByStatusInAndCreatedAtBetween(
+        @Param("statuses") java.util.Collection<BookingStatus> statuses,
+        @Param("start") java.time.LocalDateTime start,
+        @Param("end") java.time.LocalDateTime end
+    );
 }

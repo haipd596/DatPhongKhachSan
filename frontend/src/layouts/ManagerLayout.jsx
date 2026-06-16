@@ -38,6 +38,9 @@ export default function ManagerLayout() {
           <Link to="/manager/customers" className={`side-link ${currentPath.includes("/customers") ? "active" : ""}`}>
             Khách hàng
           </Link>
+          <Link to="/manager/reports" className={`side-link ${currentPath.includes("/reports") ? "active" : ""}`}>
+            Báo cáo thống kê
+          </Link>
         </nav>
         <div className="sidebar-footer">
           <button className="btn btn-outline full-width" onClick={handleLogout}>Đăng xuất</button>

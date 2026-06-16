@@ -49,6 +49,9 @@ public class User {
     @Column(length = 500)
     private String avatarUrl;
 
+    @Column(name = "created_at")
+    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+
     public User() {
     }
 
@@ -59,6 +62,7 @@ public class User {
         this.role = role;
         this.bookingCount = 0;
         this.vipLevel = VipLevel.NORMAL;
+        this.createdAt = java.time.LocalDateTime.now();
     }
 
     public Long getId() { return id; }
@@ -82,4 +86,6 @@ public class User {
     public void setDateOfBirth(java.time.LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

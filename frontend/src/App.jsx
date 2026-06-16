@@ -29,6 +29,7 @@ import DashboardPage from "./pages/manager/Dashboard";
 import RoomManagerPage from "./pages/manager/RoomManager";
 import BookingManagerPage from "./pages/manager/BookingManager";
 import CustomerManagerPage from "./pages/manager/CustomerManager";
+import ReportManagerPage from "./pages/manager/ReportManager";
 
 function RootRedirect() {
   const { user, loading } = useAuth();
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="rooms" element={<RoomManagerPage />} />
           <Route path="bookings" element={<BookingManagerPage />} />
           <Route path="customers" element={<CustomerManagerPage />} />
+          <Route path="reports" element={<ReportManagerPage />} />
         </Route>
       </Routes>
     </AuthProvider>

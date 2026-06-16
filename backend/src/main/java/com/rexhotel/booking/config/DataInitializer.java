@@ -58,27 +58,33 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         upsertManager();
-        User customerA = upsertCustomer("customer1@rex.local", "Khach Demo A", 1);
-        User customerB = upsertCustomer("customer2@rex.local", "Khach Demo B", 3);
-        User customerC = upsertCustomer("customer3@rex.local", "Khach Demo C", 6);
+        User customerA = upsertCustomer("customer1@rex.local", "Khach Demo A", 1, LocalDateTime.now().minusDays(8));
+        User customerB = upsertCustomer("customer2@rex.local", "Khach Demo B", 3, LocalDateTime.now().minusDays(4));
+        User customerC = upsertCustomer("customer3@rex.local", "Khach Demo C", 6, LocalDateTime.now());
         seedRooms();
         seedBookings(customerA, customerB, customerC);
         seedReviews(customerA, customerB, customerC);
     }
 
     private User upsertManager() {
-        return userRepository.findByEmail("manager@rex.local").orElseGet(() -> {
-            User manager = new User(
+        User manager = userRepository.findByEmail("manager@rex.local").orElseGet(() -> {
+            User m = new User(
                 "manager@rex.local",
                 passwordEncoder.encode("Manager@123"),
                 "Rex Manager",
                 UserRole.MANAGER
             );
-            return userRepository.save(manager);
+            m.setCreatedAt(LocalDateTime.now().minusDays(15));
+            return userRepository.save(m);
         });
+        if (manager.getCreatedAt() == null) {
+            manager.setCreatedAt(LocalDateTime.now().minusDays(15));
+            userRepository.save(manager);
+        }
+        return manager;
     }
 
-    private User upsertCustomer(String email, String fullName, int bookingCount) {
+    private User upsertCustomer(String email, String fullName, int bookingCount, LocalDateTime registerDate) {
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User created = new User(
                 email,
@@ -86,8 +92,12 @@ public class DataInitializer implements CommandLineRunner {
                 fullName,
                 UserRole.CUSTOMER
             );
+            created.setCreatedAt(registerDate);
             return userRepository.save(created);
         });
+        if (user.getCreatedAt() == null) {
+            user.setCreatedAt(registerDate);
+        }
         user.setBookingCount(bookingCount);
         user.setVipLevel(vipPolicyService.calculateLevel(bookingCount));
         return userRepository.save(user);
