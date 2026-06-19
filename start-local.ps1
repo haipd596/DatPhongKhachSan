@@ -80,5 +80,21 @@ if (-not (Test-Path $jarPath)) {
   }
 }
 
+# Kiểm tra và cài đặt node_modules ở thư mục gốc (root) nếu chưa có
+$rootModulesPath = Join-Path $PSScriptRoot "node_modules"
+if (-not (Test-Path $rootModulesPath)) {
+  Write-Host "Không tìm thấy node_modules ở thư mục gốc. Đang tiến hành cài đặt..."
+  & npm install
+}
+
+# Kiểm tra và cài đặt node_modules cho frontend nếu chưa có
+$feModulesPath = Join-Path $PSScriptRoot "frontend\node_modules"
+if (-not (Test-Path $feModulesPath)) {
+  Write-Host "Không tìm thấy node_modules của frontend. Đang tiến hành cài đặt dependencies..."
+  Push-Location (Join-Path $PSScriptRoot "frontend")
+  & npm install
+  Pop-Location
+}
+
 Write-Host "Chạy backend MySQL local + frontend, không cần Docker..."
 npx concurrently -k -n BE,FE -c yellow,cyan "java -jar backend/target/booking-backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=local" "npm --prefix frontend run dev"
