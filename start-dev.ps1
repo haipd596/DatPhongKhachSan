@@ -28,24 +28,27 @@ function Get-LocalMaven {
   $extractPath = Join-Path $mavenHome "apache-maven-3.9.11"
   $mvnCmdPath = Join-Path $extractPath "bin\mvn.cmd"
   
+  if (-not (Test-Path $mvnCmdPath)) {
+    Write-Host "Không tìm thấy Maven cục bộ. Đang tải và giải nén Maven 3.9.11..."
+    if (-not (Test-Path $mavenHome)) {
+      New-Item -ItemType Directory -Path $mavenHome -Force | Out-Null
+    }
+    
+    $zipPath = Join-Path $mavenHome "maven.zip"
+    $url = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip"
+    
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $webclient = New-Object System.Net.WebClient
+    $webclient.DownloadFile($url, $zipPath)
+    
+    Expand-Archive -Path $zipPath -DestinationPath $mavenHome -Force
+    Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
+  }
+  
+  # Luôn vá lỗi wildcard trong file mvn.cmd để hỗ trợ đường dẫn Unicode/Tiếng Việt
   if (Test-Path $mvnCmdPath) {
-    return $mvnCmdPath
+    (Get-Content $mvnCmdPath) -replace 'for %%i in \("%MAVEN_HOME%"\\boot\\plexus-classworlds-\*\) do set CLASSWORLDS_JAR="%%i"', 'set CLASSWORLDS_JAR="%MAVEN_HOME%\boot\plexus-classworlds-2.9.0.jar"' | Set-Content $mvnCmdPath -Force
   }
-  
-  Write-Host "Không tìm thấy Maven cục bộ. Đang tải và giải nén Maven 3.9.11..."
-  if (-not (Test-Path $mavenHome)) {
-    New-Item -ItemType Directory -Path $mavenHome -Force | Out-Null
-  }
-  
-  $zipPath = Join-Path $mavenHome "maven.zip"
-  $url = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip"
-  
-  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-  $webclient = New-Object System.Net.WebClient
-  $webclient.DownloadFile($url, $zipPath)
-  
-  Expand-Archive -Path $zipPath -DestinationPath $mavenHome -Force
-  Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
   
   if (Test-Path $mvnCmdPath) {
     return $mvnCmdPath
