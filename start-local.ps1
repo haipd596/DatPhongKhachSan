@@ -84,7 +84,7 @@ if (-not (Test-Path $jarPath)) {
 $rootModulesPath = Join-Path $PSScriptRoot "node_modules"
 if (-not (Test-Path $rootModulesPath)) {
   Write-Host "Không tìm thấy node_modules ở thư mục gốc. Đang tiến hành cài đặt..."
-  & npm install
+  npm install
 }
 
 # Kiểm tra và cài đặt node_modules cho frontend nếu chưa có
@@ -92,7 +92,7 @@ $feModulesPath = Join-Path $PSScriptRoot "frontend\node_modules"
 if (-not (Test-Path $feModulesPath)) {
   Write-Host "Không tìm thấy node_modules của frontend. Đang tiến hành cài đặt dependencies..."
   Push-Location (Join-Path $PSScriptRoot "frontend")
-  & npm install
+  npm install
   Pop-Location
 }
 
