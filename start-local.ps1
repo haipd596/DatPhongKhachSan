@@ -3,27 +3,42 @@ $ErrorActionPreference = "Stop"
 # Thiết lập thư mục Maven Home cục bộ trong project để tránh lỗi đường dẫn chứa ký tự tiếng Việt/ký tự đặc biệt
 $env:MAVEN_USER_HOME = Join-Path $PSScriptRoot ".m2"
 
-# Ưu tiên sử dụng Maven Wrapper của dự án để đảm bảo tính tương thích và độc lập
-$mvnCmd = Join-Path $PSScriptRoot "backend\mvnw.cmd"
-if (-not (Test-Path $mvnCmd)) {
-  $mvnCmd = "mvn"
-}
-
-# Chuẩn bị Maven Wrapper (tải về nếu chưa có) và override PATH để tránh các bản Maven toàn cục bị lỗi
-if (Test-Path (Join-Path $PSScriptRoot "backend\mvnw.cmd")) {
-  Write-Host "Đang chuẩn bị Maven qua Wrapper..."
-  & (Join-Path $PSScriptRoot "backend\mvnw.cmd") -f (Join-Path $PSScriptRoot "backend\pom.xml") --version | Out-Null
+# Hàm tự động tải và cài đặt Maven cục bộ dưới dạng nền tảng độc lập, tránh mọi lỗi của Maven Wrapper hoặc Maven toàn cục
+function Get-LocalMaven {
+  $mavenHome = Join-Path $PSScriptRoot ".m2"
+  $extractPath = Join-Path $mavenHome "apache-maven-3.9.11"
+  $mvnCmdPath = Join-Path $extractPath "bin\mvn.cmd"
   
-  $distsPath = Join-Path $env:MAVEN_USER_HOME "wrapper\dists"
-  if (Test-Path $distsPath) {
-    $mavenBin = Get-ChildItem -Path $distsPath -Recurse -Filter "mvn.cmd" | Select-Object -First 1 -ExpandProperty DirectoryName
-    if ($mavenBin) {
-      # Đè Maven Wrapper lên đầu PATH để ghi đè mọi bản Maven toàn cục bị lỗi
-      $env:PATH = "$mavenBin;$env:PATH"
-      $mvnCmd = "mvn"
-    }
+  if (Test-Path $mvnCmdPath) {
+    return $mvnCmdPath
+  }
+  
+  Write-Host "Không tìm thấy Maven cục bộ. Đang tải và giải nén Maven 3.9.11..."
+  if (-not (Test-Path $mavenHome)) {
+    New-Item -ItemType Directory -Path $mavenHome -Force | Out-Null
+  }
+  
+  $zipPath = Join-Path $mavenHome "maven.zip"
+  $url = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip"
+  
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $webclient = New-Object System.Net.WebClient
+  $webclient.DownloadFile($url, $zipPath)
+  
+  Expand-Archive -Path $zipPath -DestinationPath $mavenHome -Force
+  Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
+  
+  if (Test-Path $mvnCmdPath) {
+    return $mvnCmdPath
+  } else {
+    throw "Không thể cấu hình Maven cục bộ."
   }
 }
+
+# Lấy đường dẫn Maven cục bộ và ghi đè PATH
+$mvnCmd = Get-LocalMaven
+$mavenBin = Split-Path -Parent $mvnCmd
+$env:PATH = "$mavenBin;$env:PATH"
 
 $envFile = Join-Path $PSScriptRoot ".env.local"
 
@@ -55,16 +70,7 @@ $jarPath = Join-Path $PSScriptRoot "backend\target\booking-backend-0.0.1-SNAPSHO
 if (-not (Test-Path $jarPath)) {
   Write-Host "Không tìm thấy file jar. Đang tiến hành build backend..."
   $pomPath = Join-Path $PSScriptRoot "backend\pom.xml"
-  if ($mvnCmd -eq "mvn") {
-    & mvn -f $pomPath clean package -DskipTests
-  } else {
-    $mvnwPath = Join-Path $PSScriptRoot "backend\mvnw.cmd"
-    if (Test-Path $mvnwPath) {
-      & $mvnwPath -f $pomPath clean package -DskipTests
-    } else {
-      throw "Không tìm thấy Maven hoặc Maven Wrapper để build dự án."
-    }
-  }
+  & $mvnCmd -f $pomPath clean package -DskipTests
   
   if ($LASTEXITCODE -ne 0) {
     throw "Build backend thất bại."

@@ -22,20 +22,42 @@ if (Test-Path $intellijMaven) {
   $env:PATH = "$intellijMaven;$env:PATH"
 }
 
-# Chuẩn bị Maven Wrapper (tải về nếu chưa có) và override PATH để tránh các bản Maven toàn cục bị lỗi
-if (Test-Path (Join-Path $PSScriptRoot "backend\mvnw.cmd")) {
-  Write-Host "Đang chuẩn bị Maven qua Wrapper..."
-  & (Join-Path $PSScriptRoot "backend\mvnw.cmd") -f (Join-Path $PSScriptRoot "backend\pom.xml") --version | Out-Null
+# Hàm tự động tải và cài đặt Maven cục bộ dưới dạng nền tảng độc lập, tránh mọi lỗi của Maven Wrapper hoặc Maven toàn cục
+function Get-LocalMaven {
+  $mavenHome = Join-Path $PSScriptRoot ".m2"
+  $extractPath = Join-Path $mavenHome "apache-maven-3.9.11"
+  $mvnCmdPath = Join-Path $extractPath "bin\mvn.cmd"
   
-  $distsPath = Join-Path $env:MAVEN_USER_HOME "wrapper\dists"
-  if (Test-Path $distsPath) {
-    $mavenBin = Get-ChildItem -Path $distsPath -Recurse -Filter "mvn.cmd" | Select-Object -First 1 -ExpandProperty DirectoryName
-    if ($mavenBin) {
-      # Đè Maven Wrapper lên đầu PATH để ghi đè mọi bản Maven toàn cục bị lỗi
-      $env:PATH = "$mavenBin;$env:PATH"
-    }
+  if (Test-Path $mvnCmdPath) {
+    return $mvnCmdPath
+  }
+  
+  Write-Host "Không tìm thấy Maven cục bộ. Đang tải và giải nén Maven 3.9.11..."
+  if (-not (Test-Path $mavenHome)) {
+    New-Item -ItemType Directory -Path $mavenHome -Force | Out-Null
+  }
+  
+  $zipPath = Join-Path $mavenHome "maven.zip"
+  $url = "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.11/apache-maven-3.9.11-bin.zip"
+  
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $webclient = New-Object System.Net.WebClient
+  $webclient.DownloadFile($url, $zipPath)
+  
+  Expand-Archive -Path $zipPath -DestinationPath $mavenHome -Force
+  Remove-Item -Path $zipPath -Force -ErrorAction SilentlyContinue
+  
+  if (Test-Path $mvnCmdPath) {
+    return $mvnCmdPath
+  } else {
+    throw "Không thể cấu hình Maven cục bộ."
   }
 }
+
+# Lấy đường dẫn Maven cục bộ và ghi đè PATH để npm run dev dùng
+$mvnCmd = Get-LocalMaven
+$mavenBin = Split-Path -Parent $mvnCmd
+$env:PATH = "$mavenBin;$env:PATH"
 
 Write-Host "Chay FE + BE voi profile local..."
 npm run dev
